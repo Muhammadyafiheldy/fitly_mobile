@@ -1,14 +1,21 @@
 import 'package:fitly_v1/views/login.dart';
+import 'package:fitly_v1/widget/background_shape.dart'; // Import background shape
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class IntroScreen extends StatelessWidget {
+class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
 
-  Future<void> _completeIntro(BuildContext context) async {
+  @override
+  State<IntroScreen> createState() => _IntroScreenState();
+}
+
+class _IntroScreenState extends State<IntroScreen> {
+  Future<void> _completeIntro() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasSeenIntro', true);
 
+    if (!mounted) return;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -18,22 +25,27 @@ class IntroScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          const Expanded(
-            child: Center(
-              child: Text(
-                "Selamat datang di Fitly!\n\n(Desain intro kamu di sini)",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20),
+          const BackgroundShape(), // Tambahkan background di paling belakang
+          Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: Image.asset(
+                    'assets/icon/intro1.png',
+                    width: 200,
+                    height: 200,
+                  ),
+                ),
               ),
-            ),
+              ElevatedButton(
+                onPressed: _completeIntro,
+                child: const Text("Mulai"),
+              ),
+              const SizedBox(height: 20),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => _completeIntro(context),
-            child: const Text("Mulai"),
-          ),
-          const SizedBox(height: 20),
         ],
       ),
     );

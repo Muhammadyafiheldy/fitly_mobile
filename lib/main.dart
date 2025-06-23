@@ -1,3 +1,4 @@
+import 'package:fitly_v1/widget/auto_images_slider.dart';
 import 'package:fitly_v1/views/splash.dart';
 import 'package:flutter/material.dart';
 
