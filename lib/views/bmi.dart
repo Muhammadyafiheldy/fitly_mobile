@@ -15,66 +15,38 @@ class _BmiPageState extends State<BmiPage> {
   final _formKey = GlobalKey<FormState>();
   final BmiController controller = BmiController();
 
-  String? _heightError;
-  String? _weightError;
-  String? _ageError;
+  String? _heightError, _weightError, _ageError;
   bool _genderError = false;
 
-  /* ---------------- LIFECYCLE ---------------- */
   @override
   void dispose() {
     controller.dispose();
     super.dispose();
   }
 
-  /* ---------------- RESET FORM ---------------- */
   void _resetForm() {
     setState(() {
       controller.reset();
-      _heightError = null;
-      _weightError = null;
-      _ageError = null;
+      _heightError = _weightError = _ageError = null;
       _genderError = false;
     });
   }
 
-  /* ---------------- SUBMIT / HITUNG BMI ---------------- */
   void _submit() {
     setState(() {
-      /* --- VALIDASI INPUT --- */
-      _heightError =
-          controller.heightController.text.isEmpty
-              ? 'Wajib diisi'
-              : double.tryParse(controller.heightController.text) == null
-              ? 'Hanya angka'
-              : null;
-
-      _weightError =
-          controller.weightController.text.isEmpty
-              ? 'Wajib diisi'
-              : double.tryParse(controller.weightController.text) == null
-              ? 'Hanya angka'
-              : null;
-
-      _ageError =
-          controller.ageController.text.isEmpty
-              ? 'Wajib diisi'
-              : int.tryParse(controller.ageController.text) == null
-              ? 'Hanya angka'
-              : null;
-
+      _heightError = _validateNumber(controller.heightController.text);
+      _weightError = _validateNumber(controller.weightController.text);
+      _ageError = _validateNumber(controller.ageController.text, isInt: true);
       _genderError = controller.gender == null;
     });
 
-    /* --- JIKA VALID --- */
     if (_heightError == null &&
         _weightError == null &&
         _ageError == null &&
         !_genderError) {
-      final double tinggiCm = double.parse(controller.heightController.text);
-      final double beratKg = double.parse(controller.weightController.text);
-      final double tinggiM = tinggiCm / 100;
-      final double bmi = beratKg / (tinggiM * tinggiM);
+      final tinggiM = double.parse(controller.heightController.text) / 100;
+      final berat = double.parse(controller.weightController.text);
+      final bmi = berat / (tinggiM * tinggiM);
 
       Navigator.pushReplacement(
         context,
@@ -83,20 +55,32 @@ class _BmiPageState extends State<BmiPage> {
     }
   }
 
-  /* ---------------- UI ---------------- */
+  String? _validateNumber(String value, {bool isInt = false}) {
+    if (value.isEmpty) return 'Wajib diisi';
+    return isInt
+        ? int.tryParse(value) == null
+            ? 'Hanya angka'
+            : null
+        : double.tryParse(value) == null
+        ? 'Hanya angka'
+        : null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text(
+          'Indeks Masa Tubuh',
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Indeks Masa Tubuh',
-          style: TextStyle(color: Colors.white, fontSize: 18),
-        ),
-        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -106,8 +90,6 @@ class _BmiPageState extends State<BmiPage> {
             ),
           ),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
       ),
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -116,7 +98,7 @@ class _BmiPageState extends State<BmiPage> {
             const SizedBox(height: 24),
             const Text(
               'Lengkapi Data',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             Expanded(
@@ -126,7 +108,6 @@ class _BmiPageState extends State<BmiPage> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      /* ---------- Jenis Kelamin ---------- */
                       _GenderRadio(
                         value: controller.gender,
                         onChanged:
@@ -134,20 +115,15 @@ class _BmiPageState extends State<BmiPage> {
                         showError: _genderError,
                       ),
                       const SizedBox(height: 16),
-
-                      /* ---------- Usia ---------- */
                       _LabeledField(
                         label: 'Usia (tahun)',
                         child: CustomTextField(
                           controller: controller.ageController,
-                          hint: '',
                           errorText: _ageError,
-                          keyboardType: TextInputType.number,
+                          keyboardType: TextInputType.number, hint: '',
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      /* ---------- Tinggi & Berat ---------- */
                       Row(
                         children: [
                           Expanded(
@@ -155,9 +131,8 @@ class _BmiPageState extends State<BmiPage> {
                               label: 'Tinggi Badan (cm)',
                               child: CustomTextField(
                                 controller: controller.heightController,
-                                hint: '',
                                 errorText: _heightError,
-                                keyboardType: TextInputType.number,
+                                keyboardType: TextInputType.number, hint: '',
                               ),
                             ),
                           ),
@@ -167,23 +142,20 @@ class _BmiPageState extends State<BmiPage> {
                               label: 'Berat Badan (kg)',
                               child: CustomTextField(
                                 controller: controller.weightController,
-                                hint: '',
                                 errorText: _weightError,
-                                keyboardType: TextInputType.number,
+                                keyboardType: TextInputType.number, hint: '',
                               ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 32),
-
-                      /* ---------- Tombol ---------- */
                       Row(
                         children: [
                           Expanded(
                             child: PrimaryButton(
                               text: "Hitung BMI",
-                              onPressed: _submit, // ← di sini
+                              onPressed: _submit,
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -226,6 +198,7 @@ class _BmiPageState extends State<BmiPage> {
 class _LabeledField extends StatelessWidget {
   final String label;
   final Widget child;
+
   const _LabeledField({required this.label, required this.child});
 
   @override
@@ -251,6 +224,7 @@ class _GenderRadio extends StatelessWidget {
   final String? value;
   final ValueChanged<String?> onChanged;
   final bool showError;
+
   const _GenderRadio({
     required this.value,
     required this.onChanged,

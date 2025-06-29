@@ -84,6 +84,8 @@ class _HitungBmiState extends State<HitungBmi> {
           pointers: <GaugePointer>[
             NeedlePointer(
               value: bmiValue,
+              enableAnimation: true, // aktifkan animasi
+              animationType: AnimationType.ease,
               needleColor: Colors.black,
               knobStyle: const KnobStyle(color: Colors.black),
             ),

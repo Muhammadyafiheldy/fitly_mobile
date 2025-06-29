@@ -1,24 +1,96 @@
 import 'package:flutter/material.dart';
 
-class InfoPage extends StatelessWidget {
+class InfoPage extends StatefulWidget {
   const InfoPage({super.key});
 
   @override
+  State<InfoPage> createState() => _InfoPageState();
+}
+
+class _InfoPageState extends State<InfoPage> {
+  final List<String> filters = [
+    'Semua',
+    'Makanan',
+    'Olahraga',
+    'Tidur',
+    'Vitamin',
+    'Obat',
+    'Kesehatan Mental',
+    'Pola Hidup',
+  ];
+
+  int selectedIndex = 0;
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2, // Dua tab: Rekomendasi & Artikel
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Info'),
-          bottom: const TabBar(
-            labelColor: Colors.green, // warna teks tab aktif
-            unselectedLabelColor: Colors.grey, // warna teks tab tidak aktif
-            indicatorColor: Colors.green, // warna garis bawah tab aktif
-            tabs: [Tab(text: 'Rekomendasi'), Tab(text: 'Artikel')],
+    const greenColor = Color(0xFFA4DD00);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Info Rekomendasi')),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Horizontal custom filter button
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: List.generate(filters.length, (index) {
+                final isActive = selectedIndex == index;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: CustomFilterButton(
+                    label: filters[index],
+                    isActive: isActive,
+                    onTap: () {
+                      setState(() {
+                        selectedIndex = index;
+                      });
+                    },
+                  ),
+                );
+              }),
+            ),
           ),
+          const Divider(height: 1),
+          const Expanded(child: RekomendasiListView()),
+        ],
+      ),
+    );
+  }
+}
+
+class CustomFilterButton extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const CustomFilterButton({
+    super.key,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const greenColor = Color(0xFFA4DD00);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? greenColor : Colors.transparent,
+          border: Border.all(color: greenColor, width: 1),
+          borderRadius: BorderRadius.circular(24),
         ),
-        body: const TabBarView(
-          children: [RekomendasiListView(), ArtikelListView()],
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? Colors.white : greenColor,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -31,7 +103,6 @@ class RekomendasiListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Contoh data dummy
     final rekomendasiList = ['Rekomendasi 1', 'Rekomendasi 2', 'Rekomendasi 3'];
 
     return ListView.builder(
@@ -44,32 +115,6 @@ class RekomendasiListView extends StatelessWidget {
             title: Text(rekomendasiList[index]),
             subtitle: const Text('Deskripsi rekomendasi...'),
             leading: const Icon(Icons.thumb_up_alt),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// Contoh widget list Artikel
-class ArtikelListView extends StatelessWidget {
-  const ArtikelListView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Contoh data dummy
-    final artikelList = ['Artikel 1', 'Artikel 2', 'Artikel 3'];
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: artikelList.length,
-      itemBuilder: (context, index) {
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: ListTile(
-            title: Text(artikelList[index]),
-            subtitle: const Text('Ringkasan artikel...'),
-            leading: const Icon(Icons.article),
           ),
         );
       },
