@@ -16,11 +16,11 @@ class LoginPage extends StatelessWidget {
       create: (_) => LoginController(),
       child: Scaffold(
         resizeToAvoidBottomInset:
-            false, // ✅ penting agar background tidak ikut naik
+            false, // agar background tidak ikut naik
         backgroundColor: const Color(0xFFF0FFF0),
         body: Stack(
           children: [
-            const BackgroundShape(), // ✅ ini tetap di belakang
+            const BackgroundShape(), // ini tetap di belakang
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),

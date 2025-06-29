@@ -1,8 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:fitly_v1/controller/register_controller.dart';
 import 'package:fitly_v1/views/home.dart';
 import 'package:fitly_v1/views/login.dart';
 import 'package:fitly_v1/widget/background_shape.dart';
-import 'package:flutter/material.dart';
+import 'package:fitly_v1/widget/custom_text_field.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -23,11 +24,11 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false, // ✅ Cegah background ikut naik
+      resizeToAvoidBottomInset: false, // cegah background ikut naik
       backgroundColor: const Color(0xFFF0FFF0),
       body: Stack(
         children: [
-          const BackgroundShape(), // ✅ Tetap berada di belakang
+          const BackgroundShape(), // tetap berada di belakang
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -46,53 +47,34 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 40),
 
                     // Nama
-                    Container(
-                      decoration: _inputShadow(),
-                      child: TextField(
-                        controller: controller.nameController,
-                        decoration: _inputDecoration('Masukkan Nama'),
-                      ),
+                    CustomTextField(
+                      controller: controller.nameController,
+                      hint: 'Masukkan Nama',
+                      keyboardType: TextInputType.text,
+                      errorText: controller.nameError,
                     ),
                     const SizedBox(height: 16),
 
                     // Email
-                    Container(
-                      decoration: _inputShadow(),
-                      child: TextField(
-                        controller: controller.emailController,
-                        decoration: _inputDecoration(
-                          'Masukkan email',
-                        ).copyWith(errorText: controller.emailError),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
+                    CustomTextField(
+                      controller: controller.emailController,
+                      hint: 'Masukkan email',
+                      keyboardType: TextInputType.emailAddress,
+                      errorText: controller.emailError,
                     ),
                     const SizedBox(height: 16),
 
                     // Password
-                    Container(
-                      decoration: _inputShadow(),
-                      child: TextField(
-                        controller: controller.passwordController,
-                        obscureText: !controller.isPasswordVisible,
-                        decoration: _inputDecoration(
-                          'Masukkan kata sandi',
-                        ).copyWith(
-                          errorText: controller.passwordError,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              controller.isPasswordVisible
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                              color: Colors.grey,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                controller.togglePasswordVisibility((_) {});
-                              });
-                            },
-                          ),
-                        ),
-                      ),
+                    CustomTextField(
+                      controller: controller.passwordController,
+                      hint: 'Masukkan kata sandi',
+                      obscureText: !controller.isPasswordVisible,
+                      errorText: controller.passwordError,
+                      onToggleVisibility: () {
+                        setState(() {
+                          controller.togglePasswordVisibility();
+                        });
+                      },
                     ),
                     const SizedBox(height: 24),
 
@@ -101,23 +83,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            if (controller.validateInputs()) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Registrasi berhasil"),
-                                ),
-                              );
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => HomePage(),
-                                ),
-                              );
-                            }
-                          });
-                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFA4DD00),
                           shape: RoundedRectangleBorder(
@@ -128,6 +93,22 @@ class _RegisterPageState extends State<RegisterPage> {
                           'Daftar',
                           style: TextStyle(fontSize: 16, color: Colors.black87),
                         ),
+                        onPressed: () {
+                          final isValid = controller.validateInputs();
+                          setState(() {}); // refresh UI apa pun hasilnya
+
+                          if (isValid) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Registrasi berhasil, Silahkan login'),
+                              ),
+                            );
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (_) => LoginPage()),
+                            );
+                          }
+                        },
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -144,7 +125,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const LoginPage(),
+                                builder: (_) => const LoginPage(),
                               ),
                             );
                           },
@@ -162,26 +143,6 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ],
       ),
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-    );
-  }
-
-  BoxDecoration _inputShadow() {
-    return const BoxDecoration(
-      boxShadow: [
-        BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 3)),
-      ],
     );
   }
 }

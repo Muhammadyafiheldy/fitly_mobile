@@ -20,13 +20,13 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 237, 237, 237),
+      // backgroundColor: const Color(0xFFF2F2F2),
       body: Column(
         children: [
           // Bagian atas hijau + konten user (tidak scrollable)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 50, 16, 22),
+            padding: const EdgeInsets.fromLTRB(16, 40, 16, 22),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFFA4DD00), Color(0xFF6BCB77)],
@@ -88,10 +88,29 @@ class HomePage extends StatelessWidget {
                   imageUrls: bannerImages,
                   controller: carouselController,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+
+                // Bagian shortcut menu
                 const ShortcutMenu(),
                 const SizedBox(height: 24),
+
+                // Bagian artikel slider
+                const Text(
+                  "Artikel Terkini",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
                 const ArtikelSlider(),
+
+                // Bagian artikel slider kedua
+                const SizedBox(height: 24),
+                const Text(
+                  "Rekomendasi",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+                const ArtikelSlider(),
+                const SizedBox(height: 24),
               ],
             ),
           ),
