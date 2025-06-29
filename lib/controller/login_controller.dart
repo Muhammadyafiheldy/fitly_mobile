@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:fitly_v1/controller/auth_controller.dart';
 
 class LoginController with ChangeNotifier {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final AuthController authController = AuthController();
 
   bool _obscurePassword = true;
+  String? _emailError;
   String? _passwordError;
 
   bool get obscurePassword => _obscurePassword;
+  String? get emailError => _emailError ?? authController.errorMessage;
   String? get passwordError => _passwordError;
 
   void togglePasswordVisibility() {
@@ -15,16 +19,21 @@ class LoginController with ChangeNotifier {
     notifyListeners();
   }
 
-  void validateAndLogin() {
+  Future<bool> loginUser(BuildContext context) async {
+    final email = emailController.text.trim();
     final password = passwordController.text;
-    if (password.length < 8) {
-      _passwordError = 'Kata sandi minimal 8 karakter';
-    } else {
-      _passwordError = null;
-      // Lanjutkan proses login, misal: API call
-      debugPrint("Login sukses dengan email: ${emailController.text}");
+
+    _emailError = email.contains('@') ? null : 'Email harus mengandung @';
+    _passwordError = password.length < 8 ? 'Kata sandi minimal 8 karakter' : null;
+
+    if (_emailError != null || _passwordError != null) {
+      notifyListeners();
+      return false;
     }
+
+    final success = await authController.login(email, password);
     notifyListeners();
+    return success;
   }
 
   void disposeControllers() {

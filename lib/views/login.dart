@@ -15,104 +15,99 @@ class LoginPage extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => LoginController(),
       child: Scaffold(
-        resizeToAvoidBottomInset:
-            false, // ✅ penting agar background tidak ikut naik
+        resizeToAvoidBottomInset: false,
         backgroundColor: const Color(0xFFF0FFF0),
         body: Stack(
           children: [
-            const BackgroundShape(), // ✅ ini tetap di belakang
+            const BackgroundShape(),
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.only(bottom: 32),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 150),
-                      const Text(
-                        'Selamat Datang',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-
-                      // Email
-                      Consumer<LoginController>(
-                        builder:
-                            (context, controller, _) => CustomTextField(
-                              controller: controller.emailController,
-                              hint: 'Masukkan email',
-                            ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Password
-                      Consumer<LoginController>(
-                        builder:
-                            (context, controller, _) => CustomTextField(
-                              controller: controller.passwordController,
-                              hint: 'Masukkan kata sandi',
-                              obscureText: controller.obscurePassword,
-                              errorText: controller.passwordError,
-                              onToggleVisibility:
-                                  controller.togglePasswordVisibility,
-                            ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {},
-                          child: const Text(
-                            'Lupa kata sandi?',
-                            style: TextStyle(color: Colors.grey),
+                  child: Consumer<LoginController>(
+                    builder: (context, controller, _) => Column(
+                      children: [
+                        const SizedBox(height: 150),
+                        const Text(
+                          'Selamat Datang',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
+                        const SizedBox(height: 40),
 
-                      // Login button
-                      PrimaryButton(
-                        text: "Login",
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MainNavigation(),
+                        CustomTextField(
+                          controller: controller.emailController,
+                          hint: 'Masukkan email',
+                          errorText: controller.emailError,
+                        ),
+                        const SizedBox(height: 20),
+
+                        CustomTextField(
+                          controller: controller.passwordController,
+                          hint: 'Masukkan kata sandi',
+                          obscureText: controller.obscurePassword,
+                          errorText: controller.passwordError,
+                          onToggleVisibility: controller.togglePasswordVisibility,
+                        ),
+                        const SizedBox(height: 12),
+
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {},
+                            child: const Text(
+                              'Lupa kata sandi?',
+                              style: TextStyle(color: Colors.grey),
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          const Text(
-                            'Belum punya akun?',
-                            style: TextStyle(color: Colors.grey),
                           ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
+                        ),
+                        const SizedBox(height: 12),
+
+                        PrimaryButton(
+                          text: "Login",
+                          onPressed: () async {
+                            final success = await controller.loginUser(context);
+                            if (success) {
+                              Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const RegisterPage(),
+                                  builder: (context) => const MainNavigation(),
                                 ),
                               );
-                            },
-                            child: const Text(
-                              'Daftar sekarang',
-                              style: TextStyle(color: Colors.blue),
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            const Text(
+                              'Belum punya akun?',
+                              style: TextStyle(color: Colors.grey),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const RegisterPage(),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                'Daftar sekarang',
+                                style: TextStyle(color: Colors.blue),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:fitly_v1/controller/auth_controller.dart';
 
-class RegisterController {
+class RegisterController with ChangeNotifier {
+  final AuthController authController;
+
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
+  String? nameError;
   String? emailError;
   String? passwordError;
   bool isPasswordVisible = false;
+
+  RegisterController(this.authController);
 
   void dispose() {
     nameController.dispose();
@@ -15,20 +21,27 @@ class RegisterController {
     passwordController.dispose();
   }
 
-  bool validateInputs() {
+  Future<bool> validateAndRegister(BuildContext context) async {
+    final name = nameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text;
 
-    emailError =
-        email.contains('@') ? null : 'Email harus mengandung karakter @';
-    passwordError =
-        password.length < 8 ? 'Kata sandi minimal 8 karakter' : null;
+    nameError = name.isEmpty ? 'Nama harus diisi' : null;
+    emailError = !email.contains('@') ? 'Email harus mengandung @' : null;
+    passwordError = password.length < 8 ? 'Kata sandi minimal 8 karakter' : null;
 
-    return emailError == null && passwordError == null;
+    if (nameError != null || emailError != null || passwordError != null) {
+      notifyListeners();
+      return false;
+    }
+
+    final success = await authController.register(name, email, password);
+    notifyListeners();
+    return success;
   }
 
-  void togglePasswordVisibility(Function(bool) onChanged) {
+  void togglePasswordVisibility() {
     isPasswordVisible = !isPasswordVisible;
-    onChanged(isPasswordVisible);
+    notifyListeners();
   }
 }

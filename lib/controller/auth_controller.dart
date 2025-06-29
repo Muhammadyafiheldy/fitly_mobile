@@ -1,53 +1,105 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitly_v1/models/user.dart';
 import 'package:fitly_v1/service/api_service.dart';
-import 'package:flutter/material.dart';
 
 class AuthController with ChangeNotifier {
   User? _user;
   bool _isLoading = false;
+  String? _errorMessage;
 
+  // Getter
   User? get user => _user;
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  bool get isLoggedIn => _user != null;
+  String get userName => _user?.name ?? 'Guest';
+  String get userEmail => _user?.email ?? '-';
 
-  Future<void> login(String email, String password) async {
+  // Load user from SharedPreferences
+  Future<void> loadUserFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('user_data');
+    if (jsonString != null) {
+      try {
+        final jsonMap = jsonDecode(jsonString);
+        _user = User.fromJson(jsonMap);
+        notifyListeners();
+      } catch (e) {
+        _user = null;
+        await prefs.remove('user_data');
+      }
+    }
+  }
+
+  // Save user to SharedPreferences
+  Future<void> _saveUserToPrefs(User user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_data', jsonEncode(user.toJson()));
+  }
+
+  // Clear user data from SharedPreferences
+  Future<void> _clearUserFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_data');
+  }
+
+  // Login method
+  Future<bool> login(String email, String password) async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
       _user = await ApiService.login(email, password);
-      print('Login successful, user: $_user');
+      await _saveUserToPrefs(_user!);
+      return true;
     } catch (e) {
       _user = null;
-      print('Login failed: $e');
-      throw e;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> register(String name, String email, String password) async {
+  // Register method
+  Future<bool> register(String name, String email, String password) async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
+
     try {
       _user = await ApiService.register(name, email, password);
-      print('Register successful, user: $_user');
-      if (_user != null) {
-        Navigator.pushReplacementNamed(
-          navigatorKey.currentContext!,
-          '/login',
-        ); // Kembali ke login setelah register
-      }
+      await _saveUserToPrefs(_user!);
+      return true;
     } catch (e) {
       _user = null;
-      print('Register failed: $e');
-      throw e;
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Tambahkan NavigatorKey di atas class
-  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  // Logout method
+  Future<void> logout() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await ApiService.logout();
+      _user = null;
+      await _clearUserFromPrefs();
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

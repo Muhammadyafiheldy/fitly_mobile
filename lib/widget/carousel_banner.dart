@@ -25,19 +25,12 @@ class _CarouselBannerState extends State<CarouselBanner> {
       children: [
         CarouselSlider(
           carouselController: widget.controller.controller,
-          items:
-              widget.imageUrls
-                  .map(
-                    (url) => ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        url,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                      ),
-                    ),
-                  )
-                  .toList(),
+          items: widget.imageUrls.map((url) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: _buildImage(url),
+            );
+          }).toList(),
           options: CarouselOptions(
             height: 160,
             autoPlay: true,
@@ -53,23 +46,41 @@ class _CarouselBannerState extends State<CarouselBanner> {
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:
-              widget.imageUrls.asMap().entries.map((entry) {
-                return Container(
-                  width: 8.0,
-                  height: 8.0,
-                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color:
-                        _currentIndex == entry.key
-                            ? Colors.green
-                            : Colors.grey.withAlpha((0.4 * 255).toInt()),
-                  ),
-                );
-              }).toList(),
+          children: widget.imageUrls.asMap().entries.map((entry) {
+            return Container(
+              width: 8.0,
+              height: 8.0,
+              margin: const EdgeInsets.symmetric(horizontal: 4.0),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _currentIndex == entry.key
+                    ? Colors.green
+                    : Colors.grey.withAlpha((0.4 * 255).toInt()),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
+  }
+
+  /// Deteksi gambar lokal atau dari URL
+  Widget _buildImage(String url) {
+    if (url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        errorBuilder: (context, error, stackTrace) {
+          return const Center(child: Icon(Icons.broken_image));
+        },
+      );
+    } else {
+      return Image.asset(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+      );
+    }
   }
 }
