@@ -1,4 +1,6 @@
 import 'package:fitly_v1/controller/my_carousel_controller.dart' as cs;
+import 'package:fitly_v1/views/article.dart';
+import 'package:fitly_v1/views/info.dart';
 import 'package:fitly_v1/views/notification.dart';
 import 'package:fitly_v1/widget/artikel_slider.dart';
 import 'package:fitly_v1/widget/carousel_banner.dart';
@@ -20,10 +22,9 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: const Color(0xFFF2F2F2),
+    backgroundColor: Colors.white54,
       body: Column(
         children: [
-          // Bagian atas hijau + konten user (tidak scrollable)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 40, 16, 22),
@@ -49,8 +50,9 @@ class HomePage extends StatelessWidget {
                       Text(
                         "Selamat Datang",
                         style: TextStyle(
+                          fontFamily: 'Poppins',
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       Text(
@@ -79,7 +81,6 @@ class HomePage extends StatelessWidget {
             ),
           ),
 
-          // Konten scrollable
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -90,26 +91,77 @@ class HomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Bagian shortcut menu
                 const ShortcutMenu(),
                 const SizedBox(height: 24),
 
-                // Bagian artikel slider
-                const Text(
-                  "Artikel Terkini",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                // Artikel Terkini Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Artikel Terkini",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ArticlePage(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "Lihat Semua",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
                 const ArtikelSlider(),
 
-                // Bagian artikel slider kedua
                 const SizedBox(height: 24),
-                const Text(
-                  "Rekomendasi",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+
+                // Rekomendasi Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Rekomendasi",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => InfoPage()),
+                        );
+                      },
+                      child: const Text(
+                        "Lihat Semua",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
                 const ArtikelSlider(),
+
                 const SizedBox(height: 24),
               ],
             ),

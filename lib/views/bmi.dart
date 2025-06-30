@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../widget/custom_text_field.dart';
 import '../widget/primary_button.dart';
 import '../controller/bmi_controller.dart';
@@ -18,6 +19,16 @@ class _BmiPageState extends State<BmiPage> {
   String? _heightError, _weightError, _ageError;
   bool _genderError = false;
 
+  // ‑‑‑ input tambahan untuk BMR/TDEE ‑‑‑
+  String _activityLevel = 'Sedentary';
+  final Map<String, double> _activityFactor = {
+    'Sedentary': 1.2,
+    'Ringan': 1.375,
+    'Sedang': 1.55,
+    'Berat': 1.725,
+    'Sangat Berat': 1.9,
+  };
+
   @override
   void dispose() {
     controller.dispose();
@@ -29,6 +40,7 @@ class _BmiPageState extends State<BmiPage> {
       controller.reset();
       _heightError = _weightError = _ageError = null;
       _genderError = false;
+      _activityLevel = 'Sedentary';
     });
   }
 
@@ -46,11 +58,31 @@ class _BmiPageState extends State<BmiPage> {
         !_genderError) {
       final tinggiM = double.parse(controller.heightController.text) / 100;
       final berat = double.parse(controller.weightController.text);
+      final usia = int.parse(controller.ageController.text);
+      final gender = controller.gender!;
+
+      // ---- HITUNG BMI ----
       final bmi = berat / (tinggiM * tinggiM);
+
+      // ---- HITUNG BMR (Harris‑Benedict) ----
+      final bmr =
+          (gender == 'Laki-laki')
+              ? 88.36 + (13.4 * berat) + (4.8 * (tinggiM * 100)) - (5.7 * usia)
+              : 447.6 + (9.2 * berat) + (3.1 * (tinggiM * 100)) - (4.3 * usia);
+
+      final tdee = bmr * _activityFactor[_activityLevel]!;
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => HitungBmi(bmi: bmi)),
+        MaterialPageRoute(
+          builder:
+              (_) => HitungBmi(
+                bmi: bmi,
+                bmr: bmr,
+                tdee: tdee,
+                activity: _activityLevel,
+              ),
+        ),
       );
     }
   }
@@ -120,7 +152,8 @@ class _BmiPageState extends State<BmiPage> {
                         child: CustomTextField(
                           controller: controller.ageController,
                           errorText: _ageError,
-                          keyboardType: TextInputType.number, hint: '',
+                          keyboardType: TextInputType.number,
+                          hint: '',
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -132,7 +165,8 @@ class _BmiPageState extends State<BmiPage> {
                               child: CustomTextField(
                                 controller: controller.heightController,
                                 errorText: _heightError,
-                                keyboardType: TextInputType.number, hint: '',
+                                keyboardType: TextInputType.number,
+                                hint: '',
                               ),
                             ),
                           ),
@@ -143,18 +177,50 @@ class _BmiPageState extends State<BmiPage> {
                               child: CustomTextField(
                                 controller: controller.weightController,
                                 errorText: _weightError,
-                                keyboardType: TextInputType.number, hint: '',
+                                keyboardType: TextInputType.number,
+                                hint: '',
                               ),
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      /* ---------- Dropdown Aktivitas ---------- */
+                      _LabeledField(
+                        label: 'Tingkat Aktivitas',
+                        child: DropdownButtonFormField<String>(
+                          value: _activityLevel,
+                          items:
+                              _activityFactor.keys
+                                  .map(
+                                    (e) => DropdownMenuItem(
+                                      value: e,
+                                      child: Text(
+                                        e == 'Sedentary'
+                                            ? 'Sedentary (tidak aktif)'
+                                            : e,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged: (v) => setState(() => _activityLevel = v!),
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 32),
                       Row(
                         children: [
                           Expanded(
                             child: PrimaryButton(
-                              text: "Hitung BMI",
+                              text: "Hitung BMI & BMR",
                               onPressed: _submit,
                             ),
                           ),

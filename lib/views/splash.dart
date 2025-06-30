@@ -50,11 +50,14 @@ class _SplashScreenState extends State<SplashScreen> {
       backgroundColor: Colors.white,
       body: SizedBox.expand(
         child: Center(
-          // Tambahkan ini
-          child: Lottie.asset(
-            'assets/anim/fitly.json',
-            fit: BoxFit.fitWidth,
-            repeat: false,
+          child: SizedBox(
+            width: 200, // Ubah sesuai kebutuhan
+            height: 150, // Ubah sesuai kebutuhan
+            child: Lottie.asset(
+              'assets/anim/splash.json',
+              fit: BoxFit.contain,
+              repeat: false,
+            ),
           ),
         ),
       ),

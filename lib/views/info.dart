@@ -52,7 +52,7 @@ class _InfoPageState extends State<InfoPage> {
               }),
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 0.5, color: Colors.grey[300]),
           const Expanded(child: RekomendasiListView()),
         ],
       ),
@@ -82,14 +82,14 @@ class CustomFilterButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isActive ? greenColor : Colors.transparent,
-          border: Border.all(color: greenColor, width: 1),
+          border: Border.all(color: greenColor, width: 0.5),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: isActive ? Colors.white : greenColor,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
@@ -97,7 +97,7 @@ class CustomFilterButton extends StatelessWidget {
   }
 }
 
-// Contoh widget list Rekomendasi
+// widget list Rekomendasi
 class RekomendasiListView extends StatelessWidget {
   const RekomendasiListView({super.key});
 
