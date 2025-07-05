@@ -1,6 +1,6 @@
-import 'package:fitly_v1/views/intro.dart';
-import 'package:fitly_v1/views/login.dart';
-import 'package:fitly_v1/views/main_nav.dart';
+import 'intro.dart';
+import 'login.dart';
+import 'main_nav.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
