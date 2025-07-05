@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fitly_v1/models/user.dart';
@@ -8,6 +9,7 @@ class AuthController with ChangeNotifier {
   User? _user;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _isUserLoaded = false;
 
   // Getter
   User? get user => _user;
@@ -16,20 +18,27 @@ class AuthController with ChangeNotifier {
   bool get isLoggedIn => _user != null;
   String get userName => _user?.name ?? 'Guest';
   String get userEmail => _user?.email ?? '-';
+  bool get isUserLoaded => _isUserLoaded;
 
   // Load user from SharedPreferences
   Future<void> loadUserFromPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString('user_data');
-    if (jsonString != null) {
-      try {
-        final jsonMap = jsonDecode(jsonString);
-        _user = User.fromJson(jsonMap);
-        notifyListeners();
-      } catch (e) {
-        _user = null;
-        await prefs.remove('user_data');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('user_data');
+      if (userDataString != null) {
+        final userData = json.decode(userDataString);
+        _user = User.fromJson(userData);
+        _isUserLoaded = true;
+        debugPrint('AuthController: User loaded: ${_user?.name}');
+      } else {
+        _isUserLoaded = true; // tetap true agar UI tahu proses load selesai
       }
+    } catch (e) {
+      debugPrint('AuthController: Error loading user: $e');
+      _user = null;
+      _isUserLoaded = true;
+    } finally {
+      notifyListeners();
     }
   }
 
@@ -54,6 +63,7 @@ class AuthController with ChangeNotifier {
     try {
       _user = await ApiService.login(email, password);
       await _saveUserToPrefs(_user!);
+      _isUserLoaded = true;
       return true;
     } catch (e) {
       _user = null;
@@ -74,6 +84,7 @@ class AuthController with ChangeNotifier {
     try {
       _user = await ApiService.register(name, email, password);
       await _saveUserToPrefs(_user!);
+      _isUserLoaded = true;
       return true;
     } catch (e) {
       _user = null;
@@ -97,6 +108,69 @@ class AuthController with ChangeNotifier {
       await _clearUserFromPrefs();
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      _isLoading = false;
+      _isUserLoaded = false;
+      notifyListeners();
+    }
+  }
+
+  // Update Profile
+  Future<bool> updateProfile(String newName, {File? newProfilePicture}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      if (_user == null) throw Exception('User not logged in.');
+
+      final updatedUserData = await ApiService.updateProfile(
+        token: _user!.token!,
+        name: newName,
+        email: _user!.email,
+        foto: newProfilePicture,
+      );
+
+      if (updatedUserData['data'] == null) {
+        throw Exception('Data user tidak ditemukan dalam respons.');
+      }
+
+      _user = User.fromJson(updatedUserData['data']);
+      await _saveUserToPrefs(_user!);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Change Password
+  Future<bool> changePassword(String currentPassword, String newPassword, String confirmNewPassword) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      if (_user == null) throw Exception('User not logged in.');
+      if (newPassword != confirmNewPassword) throw Exception('Konfirmasi password tidak cocok.');
+      if (newPassword.length < 8) throw Exception('Password minimal 8 karakter.');
+
+      final updatedUserData = await ApiService.updateProfile(
+        token: _user!.token!,
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        newPasswordConfirmation: confirmNewPassword,
+      );
+
+      _user = User.fromJson(updatedUserData['data']);
+      await _saveUserToPrefs(_user!);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();

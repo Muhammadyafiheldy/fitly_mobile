@@ -1,7 +1,11 @@
-import 'package:fitly_v1/views/intro.dart';
-import 'package:fitly_v1/views/login.dart';
-import 'package:fitly_v1/views/main_nav.dart';
+import 'package:fitly_v1/controller/auth_controller.dart';
+import 'package:provider/provider.dart';
+
+import 'intro.dart';
+import 'login.dart';
+import 'main_nav.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -15,22 +19,24 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkFirstSeen();
+    _initApp();
   }
 
-  Future<void> _checkFirstSeen() async {
+  Future<void> _initApp() async {
+    await Future.delayed(const Duration(seconds: 5)); // delay splash
+
+    final auth = Provider.of<AuthController>(context, listen: false);
+    await auth.loadUserFromPrefs();
+
     final prefs = await SharedPreferences.getInstance();
     final hasSeenIntro = prefs.getBool('hasSeenIntro') ?? false;
-    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
-    await Future.delayed(const Duration(seconds: 3)); // simulate splash delay
 
     if (!hasSeenIntro) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const IntroScreen()),
       );
-    } else if (isLoggedIn) {
+    } else if (auth.isLoggedIn) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainNavigation()),
@@ -48,10 +54,11 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-        child: Image.asset(
-          'assets/icon/splashicon.png',
+        child: Lottie.asset(
+          'assets/anim/splash.json',
           width: 200,
-          height: 200,
+          height: 150,
+          fit: BoxFit.contain,
         ),
       ),
     );

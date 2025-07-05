@@ -1,3 +1,4 @@
+import 'package:fitly_v1/views/article.dart';
 import 'package:fitly_v1/views/bmi.dart';
 import 'package:fitly_v1/views/info.dart';
 import 'package:flutter/material.dart';
@@ -41,7 +42,7 @@ class ShortcutMenu extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const InfoPage(),
+                builder: (context) => const ArticlePage(),
               ), // ganti nanti dengan halaman yang sesuai
             );
           },
@@ -78,11 +79,27 @@ class _ShortcutIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Material(
-          color: Colors.green[100],
-          borderRadius: BorderRadius.circular(16),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100, // Warna dasar neumorphic
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.white, // Bayangan atas kiri
+                offset: Offset(-6, -6),
+                blurRadius: 2,
+                spreadRadius: 1,
+              ),
+              BoxShadow(
+                color: Color(0xFFA7A9AF), // Bayangan bawah kanan
+                offset: Offset(4, 4),
+                blurRadius: 6,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(15),
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -93,7 +110,11 @@ class _ShortcutIcon extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
         ),
       ],
     );

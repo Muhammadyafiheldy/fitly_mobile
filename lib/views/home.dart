@@ -1,33 +1,47 @@
 import 'package:fitly_v1/controller/my_carousel_controller.dart' as cs;
 import 'package:fitly_v1/views/notification.dart';
 import 'package:fitly_v1/widget/artikel_slider.dart';
+import 'package:fitly_v1/widget/recommendation_slider.dart';
 import 'package:fitly_v1/widget/carousel_banner.dart';
 import 'package:fitly_v1/widget/shortcut_menu.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:fitly_v1/controller/auth_controller.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-class HomePage extends StatelessWidget {
-  HomePage({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
-final List<String> bannerImages = [
-  'assets/img/beranda.png', // lokal asset
-  'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://plus.unsplash.com/premium_photo-1671379086168-a5d018d583cf?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8ZnJ1aXR8ZW58MHx8MHx8fDA%3D',
-];
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
 
-
-
-
+class _HomePageState extends State<HomePage>
+    with AutomaticKeepAliveClientMixin<HomePage> {
+  final List<String> bannerImages = [
+    'assets/img/beranda.png',
+    'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600',
+    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600',
+    'https://plus.unsplash.com/premium_photo-1671379086168-a5d018d583cf?w=600',
+  ];
 
   final cs.MyCarouselController carouselController = cs.MyCarouselController();
 
   @override
+  void initState() {
+    super.initState();
+    final auth = Provider.of<AuthController>(context, listen: false);
+    if (!auth.isUserLoaded) {
+      auth.loadUserFromPrefs();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
-      // backgroundColor: const Color(0xFFF2F2F2),
       body: Column(
         children: [
-          // Bagian atas hijau + konten user (tidak scrollable)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 40, 16, 22),
@@ -47,35 +61,35 @@ final List<String> bannerImages = [
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        "Selamat Datang",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        "Muhammad Yafi Heldy",
-                        style: TextStyle(color: Colors.white),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                  child: Selector<AuthController, String>(
+                    selector: (_, controller) => controller.userName,
+                    builder: (_, name, __) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Selamat Datang",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            name,
+                            style: const TextStyle(color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
-                    Icons.notifications_none,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(Icons.notifications_none, color: Colors.white),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationPage(),
-                      ),
+                      MaterialPageRoute(builder: (context) => const NotificationPage()),
                     );
                   },
                 ),
@@ -94,11 +108,9 @@ final List<String> bannerImages = [
                 ),
                 const SizedBox(height: 24),
 
-                // Bagian shortcut menu
                 const ShortcutMenu(),
                 const SizedBox(height: 24),
 
-                // Bagian artikel slider
                 const Text(
                   "Artikel Terkini",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -106,14 +118,13 @@ final List<String> bannerImages = [
                 const SizedBox(height: 24),
                 const ArtikelSlider(),
 
-                // Bagian artikel slider kedua
                 const SizedBox(height: 24),
                 const Text(
                   "Rekomendasi",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 24),
-                const ArtikelSlider(),
+                const RecommendationSlider(),
                 const SizedBox(height: 24),
               ],
             ),
@@ -122,4 +133,7 @@ final List<String> bannerImages = [
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
