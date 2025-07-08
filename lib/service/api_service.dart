@@ -11,9 +11,9 @@ import 'package:fitly_v1/models/recommendation.dart'; // Import model Recommenda
 
 class ApiService {
   static const String baseUrl =
-      'https://6161-110-137-78-148.ngrok-free.app/api';
+      'https://1fccae119255.ngrok-free.app/api';
   static const String baseImageUrl =
-      'https://6161-110-137-78-148.ngrok-free.app/storage/'; // URL dasar untuk gambar
+      'https://1fccae119255.ngrok-free.app/storage/'; // URL dasar untuk gambar
   static String? _token;
 
   // Simpan token
@@ -273,7 +273,7 @@ class ApiService {
     }
   }
 
-// Fungsi untuk menyimpan data BMI baru
+
   // Fungsi untuk menyimpan data BMI baru
   static Future<BmiRecord> saveBmiData({
     required double height,
@@ -281,14 +281,11 @@ class ApiService {
     required int age,
     required String gender,
     required String activityLevel,
-    // Opsional: Kirim juga BMI, BMR, TDEE yang dihitung di frontend
-    // Ini bisa membantu backend memverifikasi atau sebagai fallback,
-    // tapi backend tetap harus menghitungnya sendiri untuk integritas.
     required double bmi,
     required double bmr,
     required double tdee,
   }) async {
-    final token = await _getToken(); // <<< Ambil token di sini
+    final token = await _getToken();
     if (token == null) {
       throw Exception('Authentication token is not set. Please log in.');
     }
@@ -299,7 +296,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': 'Bearer $token', // Kirim token di header
+        'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
         'height': height,
@@ -307,7 +304,6 @@ class ApiService {
         'age': age,
         'gender': gender,
         'activity_level': activityLevel,
-        // Kirim nilai BMI, BMR, TDEE jika backend mengharapkannya atau untuk verifikasi
         'bmi': bmi,
         'bmr': bmr,
         'tdee': tdee,
@@ -315,8 +311,6 @@ class ApiService {
     );
 
     if (response.statusCode == 201) {
-      // 201 Created
-      // Pastikan backend Anda mengembalikan data BMI yang baru dibuat di bawah kunci 'data'
       final Map<String, dynamic> responseData = jsonDecode(response.body);
       if (responseData.containsKey('data')) {
         return BmiRecord.fromJson(responseData['data']);
@@ -324,25 +318,21 @@ class ApiService {
         throw Exception('BMI data not found in response: ${response.body}');
       }
     } else {
-      // Tangani error dari server (misal, validasi gagal, unauthorized)
       String errorMessage = 'Failed to save BMI data. Status: ${response.statusCode}';
       try {
         final Map<String, dynamic> errorBody = jsonDecode(response.body);
         if (errorBody.containsKey('message')) {
           errorMessage = errorBody['message'];
         } else if (errorBody.containsKey('errors')) {
-          // Jika ada error validasi Laravel
           errorMessage = 'Validation errors: ${errorBody['errors']}';
         }
-      } catch (e) {
-        // Gagal parse error body, gunakan pesan default
-        print('Error parsing error response: $e');
+      } catch (_) {
+        // Fallback to default message if error body cannot be parsed
       }
       throw Exception(errorMessage);
     }
   }
 
-  // Fungsi untuk mengambil semua riwayat BMI pengguna
   static Future<List<BmiRecord>> fetchBmiRecords() async {
     final token = await _getToken();
     if (token == null) {
@@ -359,19 +349,19 @@ class ApiService {
     );
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> jsonData = jsonDecode(response.body); // <<< PERUBAHAN DI SINI: Ubah tipe menjadi Map
+      final dynamic jsonData = jsonDecode(response.body);
 
-      List<dynamic> bmiListJson;
-
-      // Asumsi backend mengembalikan { "data": [...] }
-      if (jsonData.containsKey('data') && jsonData['data'] is List) {
-        bmiListJson = jsonData['data'] as List;
+      // Check if the response is a List directly (as indicated by the error)
+      if (jsonData is List) {
+        return jsonData.map((json) => BmiRecord.fromJson(json as Map<String, dynamic>)).toList();
+      } else if (jsonData is Map<String, dynamic> && jsonData.containsKey('data') && jsonData['data'] is List) {
+        // Fallback if backend suddenly starts sending { "data": [...] }
+        return (jsonData['data'] as List)
+            .map((json) => BmiRecord.fromJson(json as Map<String, dynamic>))
+            .toList();
       } else {
-      
-        throw Exception('Format BMI records tidak dikenali atau kunci "data" tidak ditemukan: ${response.body}');
+        throw Exception('Unexpected BMI records format: ${response.body}');
       }
-
-      return bmiListJson.map((json) => BmiRecord.fromJson(json)).toList();
     } else {
       String errorMessage = 'Failed to load BMI records. Status: ${response.statusCode}';
       try {
@@ -379,16 +369,15 @@ class ApiService {
         if (errorBody.containsKey('message')) {
           errorMessage = errorBody['message'];
         }
-      } catch (e) {
-        print('Error parsing error response: $e');
+      } catch (_) {
+        // Fallback to default message if error body cannot be parsed
       }
       throw Exception(errorMessage);
     }
   }
 
-  // Fungsi untuk mengambil detail satu riwayat BMI
   static Future<BmiRecord> fetchBmiRecord(int id) async {
-    final token = await _getToken(); // <<< Ambil token di sini
+    final token = await _getToken();
     if (token == null) {
       throw Exception('Authentication token is not set. Please log in.');
     }
@@ -404,11 +393,10 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = jsonDecode(response.body);
-      // Asumsi backend mengembalikan { "data": {...} } untuk detail satu record
       if (data.containsKey('data')) {
         return BmiRecord.fromJson(data['data']);
       } else {
-        return BmiRecord.fromJson(data); // Fallback jika respons langsung object
+        return BmiRecord.fromJson(data);
       }
     } else {
       String errorMessage = 'Failed to load BMI record $id. Status: ${response.statusCode}';
@@ -417,8 +405,8 @@ class ApiService {
         if (errorBody.containsKey('message')) {
           errorMessage = errorBody['message'];
         }
-      } catch (e) {
-        print('Error parsing error response: $e');
+      } catch (_) {
+        // Fallback to default message if error body cannot be parsed
       }
       throw Exception(errorMessage);
     }

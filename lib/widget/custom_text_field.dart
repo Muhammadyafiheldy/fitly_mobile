@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Penting: Tambahkan ini untuk FilteringTextInputFormatter
 
 class CustomTextField extends StatelessWidget {
+  
   final TextEditingController controller;
   final String hint;
   final bool obscureText;

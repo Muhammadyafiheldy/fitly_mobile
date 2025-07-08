@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home.dart';
-import 'info.dart';
+import 'recomendation.dart';
 import 'history.dart';
 import 'profile.dart';
 import '../widget/bottom_navigation.dart';

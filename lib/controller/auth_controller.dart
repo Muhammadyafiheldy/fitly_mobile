@@ -10,6 +10,7 @@ class AuthController with ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isUserLoaded = false;
+  String? _authToken; 
 
   // Getter
   User? get user => _user;
@@ -19,6 +20,7 @@ class AuthController with ChangeNotifier {
   String get userName => _user?.name ?? 'Guest';
   String get userEmail => _user?.email ?? '-';
   bool get isUserLoaded => _isUserLoaded;
+  String? get authToken => _authToken; 
 
   // Load user from SharedPreferences
   Future<void> loadUserFromPrefs() async {
@@ -154,16 +156,22 @@ class AuthController with ChangeNotifier {
     notifyListeners();
 
     try {
-      if (_user == null) throw Exception('User not logged in.');
-      if (newPassword != confirmNewPassword) throw Exception('Konfirmasi password tidak cocok.');
-      if (newPassword.length < 8) throw Exception('Password minimal 8 karakter.');
+      if (_user == null) {
+        throw Exception('User tidak terautentikasi. Silakan login kembali.');
+      }
+
+      
 
       final updatedUserData = await ApiService.updateProfile(
         token: _user!.token!,
         currentPassword: currentPassword,
         newPassword: newPassword,
-        newPasswordConfirmation: confirmNewPassword,
+        newPasswordConfirmation: confirmNewPassword, // Ini akan tetap dikirim ke API
       );
+
+      if (updatedUserData['data'] == null) {
+        throw Exception('Data user tidak ditemukan dalam respons update password.');
+      }
 
       _user = User.fromJson(updatedUserData['data']);
       await _saveUserToPrefs(_user!);

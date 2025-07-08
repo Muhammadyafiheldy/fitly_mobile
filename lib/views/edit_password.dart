@@ -1,8 +1,6 @@
-// code edit_password.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitly_v1/controller/auth_controller.dart';
-import 'package:fitly_v1/models/user.dart';
 
 class EditPasswordPage extends StatefulWidget {
   const EditPasswordPage({super.key});
@@ -14,53 +12,62 @@ class EditPasswordPage extends StatefulWidget {
 class _EditPasswordPageState extends State<EditPasswordPage> {
   final TextEditingController _currentPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmNewPasswordController = TextEditingController();
+  // final TextEditingController _confirmNewPasswordController = TextEditingController(); // HAPUS INI
 
   final _formKey = GlobalKey<FormState>();
 
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
-  bool _obscureConfirmNewPassword = true;
+  // bool _obscureConfirmNewPassword = true; // HAPUS INI
 
   @override
   void dispose() {
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
-    _confirmNewPasswordController.dispose();
+    // _confirmNewPasswordController.dispose(); // HAPUS INI
     super.dispose();
   }
 
   // Fungsi untuk mengubah password
   Future<void> _changePassword() async {
+    // Pastikan form sudah tervalidasi sebelum memanggil API
     if (_formKey.currentState!.validate()) {
       final authController = Provider.of<AuthController>(context, listen: false);
       final currentPassword = _currentPasswordController.text;
       final newPassword = _newPasswordController.text;
-      final confirmNewPassword = _confirmNewPasswordController.text;
+      // final confirmNewPassword = _confirmNewPasswordController.text; // HAPUS INI
 
-      // Tidak perlu setState untuk loading, AuthController sudah mengurusnya
       try {
+        // Panggil fungsi changePassword dari AuthController
         final success = await authController.changePassword(
           currentPassword,
           newPassword,
-          confirmNewPassword,
+          newPassword, // KIRIM NEW PASSWORD SEBAGAI CONFIRMATION JUGA
         );
+
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Password berhasil diubah!')),
-          );
+          // Tampilkan pesan sukses dan kembali ke halaman sebelumnya
           if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Password berhasil diubah!')),
+            );
             Navigator.of(context).pop();
           }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal mengubah password: ${authController.errorMessage}')),
-          );
+          // Tampilkan pesan error dari AuthController
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Gagal mengubah password: ${authController.errorMessage ?? "Terjadi kesalahan"}')),
+            );
+          }
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Terjadi kesalahan saat mengubah password: $e')),
-        );
+        // Tangani error yang tidak terduga
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Terjadi kesalahan tidak terduga: $e')),
+          );
+        }
       }
     }
   }
@@ -72,8 +79,15 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
         return Scaffold(
           backgroundColor: const Color(0xFFF5F5F5),
           appBar: AppBar(
-            title: const Text('Ubah Password'),
-            backgroundColor: const Color(0xFFA4DD00),
+            title: const Text(
+              'Ubah Password',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            iconTheme: const IconThemeData(color: Colors.white),
+            backgroundColor: Colors.transparent,
             flexibleSpace: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -195,27 +209,28 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 20),
-                        _buildPasswordInputField(
-                          label: 'Confirm New Password',
-                          icon: Icons.lock_open_outlined,
-                          controller: _confirmNewPasswordController,
-                          obscureText: _obscureConfirmNewPassword,
-                          toggleVisibility: () {
-                            setState(() {
-                              _obscureConfirmNewPassword = !_obscureConfirmNewPassword;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Konfirmasi password tidak boleh kosong.';
-                            }
-                            if (value != _newPasswordController.text) {
-                              return 'Konfirmasi password tidak cocok.';
-                            }
-                            return null;
-                          },
-                        ),
+                        // HAPUS BAGIAN INI: Confirm New Password
+                        // const SizedBox(height: 20),
+                        // _buildPasswordInputField(
+                        //   label: 'Confirm New Password',
+                        //   icon: Icons.lock_open_outlined,
+                        //   controller: _confirmNewPasswordController,
+                        //   obscureText: _obscureConfirmNewPassword,
+                        //   toggleVisibility: () {
+                        //     setState(() {
+                        //       _obscureConfirmNewPassword = !_obscureConfirmNewPassword;
+                        //     });
+                        //   },
+                        //   validator: (value) {
+                        //     if (value == null || value.isEmpty) {
+                        //       return 'Konfirmasi password tidak boleh kosong.';
+                        //     }
+                        //     if (value != _newPasswordController.text) {
+                        //       return 'Konfirmasi password tidak cocok.';
+                        //     }
+                        //     return null;
+                        //   },
+                        // ),
                       ],
                     ),
                   ),
@@ -298,10 +313,10 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField( // Ganti TextField menjadi TextFormField untuk validasi
+        TextFormField(
           controller: controller,
           obscureText: obscureText,
-          validator: validator, // Tambahkan validator
+          validator: validator,
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: const Color(0xFF8B7355)),
             hintText: 'Enter $label',
@@ -316,6 +331,22 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none,
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFA4DD00), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
             filled: true,
             fillColor: Colors.grey.shade200,
             contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
@@ -323,6 +354,7 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
           style: const TextStyle(
             color: Colors.black,
           ),
+          cursorColor: const Color(0xFFA4DD00),
         ),
       ],
     );

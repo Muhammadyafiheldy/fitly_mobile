@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:fitly_v1/controller/auth_controller.dart';
 import 'package:fitly_v1/views/login.dart';
 import 'package:fitly_v1/views/edit_profile.dart';
+import 'package:fitly_v1/views/notification.dart';
 import 'package:fitly_v1/views/edit_password.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -17,9 +18,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    // Memuat data pengguna dari SharedPreferences saat halaman diinisialisasi.
-    // Future.microtask digunakan untuk memastikan bahwa context tersedia
-    // sebelum memanggil Provider.of.
+
     Future.microtask(() {
       Provider.of<AuthController>(context, listen: false).loadUserFromPrefs();
       debugPrint('ProfilePage: initState - loadUserFromPrefs called.');
@@ -38,7 +37,9 @@ class _ProfilePageState extends State<ProfilePage> {
             width: double.infinity,
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: NetworkImage('https://i.pinimg.com/736x/f7/c8/76/f7c8768df03d080ffd26828bd36b70df.jpg'),
+                image: NetworkImage(
+                  'https://i.pinimg.com/736x/f7/c8/76/f7c8768df03d080ffd26828bd36b70df.jpg',
+                ),
                 fit: BoxFit.cover,
               ),
               borderRadius: BorderRadius.only(
@@ -65,7 +66,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 // Menggunakan Consumer untuk hanya membangun ulang bagian yang menampilkan nama dan email
                 child: Consumer<AuthController>(
                   builder: (context, auth, child) {
-                    debugPrint('ProfilePage: Consumer rebuild - userName: ${auth.userName}, userEmail: ${auth.userEmail}');
+                    debugPrint(
+                      'ProfilePage: Consumer rebuild - userName: ${auth.userName}, userEmail: ${auth.userEmail}',
+                    );
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -79,11 +82,22 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: CircleAvatar(
                             radius: 46,
                             // Menggunakan NetworkImage jika ada URL, jika tidak menggunakan AssetImage default
-                            backgroundImage: (auth.user?.profilePictureUrl != null && auth.user!.profilePictureUrl!.isNotEmpty)
-                                ? NetworkImage(auth.user!.profilePictureUrl!) as ImageProvider<Object>
-                                : const AssetImage('assets/img/profil.jpg') as ImageProvider<Object>,
+                            backgroundImage:
+                                (auth.user?.profilePictureUrl != null &&
+                                        auth
+                                            .user!
+                                            .profilePictureUrl!
+                                            .isNotEmpty)
+                                    ? NetworkImage(
+                                          auth.user!.profilePictureUrl!,
+                                        )
+                                        as ImageProvider<Object>
+                                    : const AssetImage('assets/img/profil.jpg')
+                                        as ImageProvider<Object>,
                             onBackgroundImageError: (exception, stackTrace) {
-                              debugPrint('Error loading profile image: $exception');
+                              debugPrint(
+                                'Error loading profile image: $exception',
+                              );
                             },
                           ),
                         ),
@@ -134,7 +148,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         // Navigasi ke halaman EditProfilePage
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                          MaterialPageRoute(
+                            builder: (context) => const EditProfilePage(),
+                          ),
                         );
                       },
                     ),
@@ -142,15 +158,15 @@ class _ProfilePageState extends State<ProfilePage> {
                       icon: Icons.notifications_outlined,
                       title: 'Notifications',
                       onTap: () {
-                        // Implementasi navigasi ke halaman Notifications
-                        // Anda bisa menambahkan navigasi ke halaman Notifikasi di sini jika ada.
-                        // Contoh:
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(builder: (context) => const NotificationsPage()),
-                        // );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationPage(),
+                          ),
+                        );
                       },
                     ),
+
                     _buildMenuItem(
                       icon: Icons.lock_outline,
                       title: 'Passwords',
@@ -158,7 +174,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         // Navigasi ke halaman EditPasswordPage
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const EditPasswordPage()),
+                          MaterialPageRoute(
+                            builder: (context) => const EditPasswordPage(),
+                          ),
                         );
                       },
                     ),
@@ -167,13 +185,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       title: 'Logout',
                       onTap: () {
                         // Dapatkan instance AuthController tanpa mendengarkan
-                        final authForLogout = Provider.of<AuthController>(context, listen: false);
+                        final authForLogout = Provider.of<AuthController>(
+                          context,
+                          listen: false,
+                        );
                         showDialog(
                           context: context,
                           builder: (BuildContext dialogContext) {
                             return AlertDialog(
                               title: const Text('Konfirmasi Logout'),
-                              content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+                              content: const Text(
+                                'Apakah Anda yakin ingin keluar dari akun?',
+                              ),
                               actions: <Widget>[
                                 TextButton(
                                   onPressed: () {
@@ -193,12 +216,19 @@ class _ProfilePageState extends State<ProfilePage> {
                                     // Navigasi ke halaman login dan hapus semua rute sebelumnya
                                     if (context.mounted) {
                                       Navigator.of(context).pushAndRemoveUntil(
-                                        MaterialPageRoute(builder: (context) => const LoginPage()),
-                                        (Route<dynamic> route) => false, // Hapus semua rute sebelumnya
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) => const LoginPage(),
+                                        ),
+                                        (Route<dynamic> route) =>
+                                            false, // Hapus semua rute sebelumnya
                                       );
                                     }
                                   },
-                                  child: const Text('Ya', style: TextStyle(color: Colors.red)),
+                                  child: const Text(
+                                    'Ya',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
                                 ),
                               ],
                             );
