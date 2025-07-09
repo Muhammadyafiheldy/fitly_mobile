@@ -8,12 +8,14 @@ import 'package:http_parser/http_parser.dart';
 import 'package:fitly_v1/models/user.dart';
 import 'package:fitly_v1/models/bmi.dart';
 import 'package:fitly_v1/models/recommendation.dart'; // Import model Recommendation
+import 'package:fitly_v1/models/infogizi.dart'; 
+import 'package:fitly_v1/models/notification_model.dart';
 
 class ApiService {
   static const String baseUrl =
-      'https://1fccae119255.ngrok-free.app/api';
+      'https://15db24475760.ngrok-free.app/api';
   static const String baseImageUrl =
-      'https://1fccae119255.ngrok-free.app/storage/'; // URL dasar untuk gambar
+      'https://15db24475760.ngrok-free.app/storage/'; // URL dasar untuk gambar
   static String? _token;
 
   // Simpan token
@@ -211,8 +213,7 @@ class ApiService {
       'Authorization': 'Bearer $token',
     });
 
-    // PENTING: Tambahkan ini untuk memberitahu Laravel bahwa ini sebenarnya adalah permintaan PUT
-    // Ini adalah "method spoofing" karena MultipartRequest dengan file tidak bisa langsung PUT
+
     request.fields['_method'] = 'PUT';
 
     // Tambahkan field data profil hanya jika tidak null
@@ -249,7 +250,7 @@ class ApiService {
     Map<String, dynamic> responseBody;
     try {
       responseBody = jsonDecode(response.body) as Map<String, dynamic>;
-      // Cetak respons lengkap untuk debugging (opsional, bisa dihapus di produksi)
+     
       print('Update Profile - Status Code: ${response.statusCode}');
       print('Update Profile - Raw Body: ${response.body}');
       print('Update Profile - Decoded Body: $responseBody');
@@ -260,13 +261,11 @@ class ApiService {
     }
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      // Laravel umumnya mengembalikan 200 OK untuk operasi UPDATE yang berhasil.
       return responseBody;
     } else {
-      // Ambil pesan error dari respons, atau gunakan pesan default
       final message = responseBody['message'] ?? 'Gagal memperbarui profil';
       final errors =
-          responseBody['errors'] ?? {}; // Ambil detail error validasi jika ada
+          responseBody['errors'] ?? {}; 
       throw Exception(
         '$message. Status code: ${response.statusCode}. Errors: $errors',
       );
@@ -407,6 +406,189 @@ class ApiService {
         }
       } catch (_) {
         // Fallback to default message if error body cannot be parsed
+      }
+      throw Exception(errorMessage);
+    }
+  }
+
+ // --- Fungsi Info Gizi ---
+
+  static Future<List<Infogizi>> fetchAllInfogizi() async {
+    final headers = await getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/infogizi'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      if (responseData['status'] == true && responseData['data'] is List) {
+        List<dynamic> dataList = responseData['data'];
+        return dataList.map((json) {
+          // TIDAK PERLU MENAMBAHKAN baseImageUrl lagi
+          // Karena image di database sudah berupa URL lengkap
+          // Cukup pastikan properti 'image' ada dan bukan null
+          final Map<String, dynamic> modifiedJson = Map.from(json);
+          // Jika image null atau kosong, berikan placeholder langsung di sini atau di model
+          if (modifiedJson['image'] == null || (modifiedJson['image'] is String && modifiedJson['image'].isEmpty)) {
+            modifiedJson['image'] = 'https://placehold.co/200x100/CCCCCC/000000?text=No+Image';
+          }
+
+          return Infogizi.fromJson(modifiedJson);
+        }).toList();
+      } else {
+        throw Exception('Failed to load Infogizi: ${responseData['message'] ?? 'Unexpected data format'}');
+      }
+    } else {
+      String errorMessage = 'Failed to load Infogizi. Status Code: ${response.statusCode}';
+      try {
+        final Map<String, dynamic> errorBody = json.decode(response.body);
+        if (errorBody.containsKey('message')) {
+          errorMessage = errorBody['message'];
+        }
+      } catch (_) {
+        // Fallback jika body error tidak bisa di-parse
+      }
+      throw Exception(errorMessage);
+    }
+  }
+
+  static Future<Infogizi> fetchInfogiziById(int id) async {
+    final headers = await getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/infogizi/$id'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      if (responseData['status'] == true && responseData['data'] is Map<String, dynamic>) {
+        final Map<String, dynamic> infogiziData = responseData['data'];
+        // TIDAK PERLU MENAMBAHKAN baseImageUrl lagi
+        // Cukup pastikan properti 'image' ada dan bukan null
+        if (infogiziData['image'] == null || (infogiziData['image'] is String && infogiziData['image'].isEmpty)) {
+          infogiziData['image'] = 'https://placehold.co/200x100/CCCCCC/000000?text=No+Image';
+        }
+        
+        return Infogizi.fromJson(infogiziData);
+      } else {
+        throw Exception('Failed to load Infogizi details: ${responseData['message'] ?? 'Unexpected data format'}');
+      }
+    } else {
+      String errorMessage = 'Failed to load Infogizi details. Status Code: ${response.statusCode}';
+      try {
+        final Map<String, dynamic> errorBody = json.decode(response.body);
+        if (errorBody.containsKey('message')) {
+          errorMessage = errorBody['message'];
+        }
+      } catch (_) {
+        // Fallback jika body error tidak bisa di-parse
+      }
+      throw Exception(errorMessage);
+    }
+  }
+
+  // --- Fungsi Notifikasi Baru ---
+
+  static Future<List<AppNotification>> getNotifications() async {
+    final headers = await getHeaders();
+    if (headers['Authorization'] == null) {
+      throw Exception('Authentication token is not set. Please log in.');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/notifications'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      if (responseData['success'] == true && responseData['data'] is List) {
+        List<dynamic> data = responseData['data'];
+        return data.map((json) => AppNotification.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load notifications: ${responseData['message'] ?? 'Unexpected data format'}');
+      }
+    } else if (response.statusCode == 401) {
+      throw Exception('Unauthorized: Sesi Anda telah berakhir. Mohon login kembali.');
+    } else {
+      String errorMessage = 'Failed to load notifications. Status: ${response.statusCode}';
+      try {
+        final Map<String, dynamic> errorBody = json.decode(response.body);
+        if (errorBody.containsKey('message')) {
+          errorMessage = errorBody['message'];
+        }
+      } catch (_) {
+        // Fallback to default message
+      }
+      throw Exception(errorMessage);
+    }
+  }
+
+  static Future<void> markNotificationAsRead(String notificationId) async {
+    final headers = await getHeaders();
+    if (headers['Authorization'] == null) {
+      throw Exception('Authentication token is not set. Please log in.');
+    }
+
+    // Endpoint mark-as-read di Laravel adalah POST
+    final response = await http.post(
+      Uri.parse('$baseUrl/notifications/$notificationId/mark-as-read'), // Pastikan ini sesuai dengan route Laravel
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      if (responseData['success'] != true) {
+        throw Exception(responseData['message'] ?? 'Failed to mark notification as read.');
+      }
+    } else if (response.statusCode == 401) {
+      throw Exception('Unauthorized: Sesi Anda telah berakhir. Mohon login kembali.');
+    } else {
+      String errorMessage = 'Failed to mark notification as read. Status: ${response.statusCode}';
+      try {
+        final Map<String, dynamic> errorBody = json.decode(response.body);
+        if (errorBody.containsKey('message')) {
+          errorMessage = errorBody['message'];
+        }
+      } catch (_) {
+        // Fallback to default message
+      }
+      throw Exception(errorMessage);
+    }
+  }
+
+  static Future<int> getUnreadNotificationCount() async {
+    final headers = await getHeaders();
+    if (headers['Authorization'] == null) {
+      // Jika tidak ada token, anggap tidak ada notifikasi yang belum dibaca
+      return 0; 
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/notifications/unread-count'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      if (responseData['success'] == true && responseData.containsKey('count')) {
+        return responseData['count'] as int;
+      } else {
+        throw Exception('Failed to get unread count: ${responseData['message'] ?? 'Unexpected data format'}');
+      }
+    } else if (response.statusCode == 401) {
+      // Jika unauthorized, anggap tidak ada notifikasi yang belum dibaca atau token invalid
+      return 0; 
+    } else {
+      String errorMessage = 'Failed to get unread count. Status: ${response.statusCode}';
+      try {
+        final Map<String, dynamic> errorBody = json.decode(response.body);
+        if (errorBody.containsKey('message')) {
+          errorMessage = errorBody['message'];
+        }
+      } catch (_) {
+        // Fallback to default message
       }
       throw Exception(errorMessage);
     }

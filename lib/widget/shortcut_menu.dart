@@ -1,7 +1,7 @@
 import 'package:fitly_v1/views/article.dart';
 import 'package:fitly_v1/views/bmi.dart';
 import 'package:fitly_v1/views/recomendation.dart';
-import 'package:fitly_v1/views/Progres.dart';
+import 'package:fitly_v1/views/Info_gizi.dart';
 import 'package:flutter/material.dart';
 
 class ShortcutMenu extends StatelessWidget {
@@ -50,12 +50,12 @@ class ShortcutMenu extends StatelessWidget {
         ),
         _ShortcutIcon(
           icon: Icons.healing,
-          label: 'Progress',
+          label: 'Nutrisi',
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const ProgressPage(),
+                builder: (context) => const NutrisiPage(),
               ), // ganti nanti dengan halaman yang sesuai
             );
           },

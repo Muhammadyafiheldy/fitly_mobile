@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart'; // Untuk @required atau @visibleForTesting jika diperlukan, tapi tidak wajib untuk dasar
+import 'package:flutter/foundation.dart';
 
 class AppNotification {
   final String id;
@@ -6,8 +6,8 @@ class AppNotification {
   final String title;
   final String subtitle;
   final String time; // Waktu notifikasi, bisa 'Baru saja' atau format tanggal
-  final String? articleId; // ID artikel terkait, nullable
-  final String? recommendationId; // ID rekomendasi terkait, nullable
+  final String? relatedId; // ID item terkait (artikel/rekomendasi), nullable
+  final String? relatedType; // Tipe item terkait ('article', 'recommendation'), nullable
   final bool isRead; // Status sudah dibaca atau belum
 
   AppNotification({
@@ -16,8 +16,8 @@ class AppNotification {
     required this.title,
     required this.subtitle,
     required this.time,
-    this.articleId,
-    this.recommendationId,
+    this.relatedId, // Diubah
+    this.relatedType, // Diubah
     required this.isRead,
   });
 
@@ -29,8 +29,8 @@ class AppNotification {
       title: json['title'] as String,
       subtitle: json['subtitle'] as String,
       time: json['time'] as String, // Asumsi 'time' sudah diformat di backend
-      articleId: json['article_id']?.toString(), // Handle jika null
-      recommendationId: json['recommendation_id']?.toString(), // Handle jika null
+      relatedId: json['related_id']?.toString(), // Mengambil related_id
+      relatedType: json['related_type'] as String?, // Mengambil related_type
       isRead: json['is_read'] as bool,
     );
   }
@@ -43,8 +43,8 @@ class AppNotification {
       'title': title,
       'subtitle': subtitle,
       'time': time,
-      'article_id': articleId,
-      'recommendation_id': recommendationId,
+      'related_id': relatedId, // Diubah
+      'related_type': relatedType, // Diubah
       'is_read': isRead,
     };
   }
@@ -56,8 +56,8 @@ class AppNotification {
     String? title,
     String? subtitle,
     String? time,
-    String? articleId,
-    String? recommendationId,
+    String? relatedId, // Diubah
+    String? relatedType, // Diubah
     bool? isRead,
   }) {
     return AppNotification(
@@ -66,8 +66,8 @@ class AppNotification {
       title: title ?? this.title,
       subtitle: subtitle ?? this.subtitle,
       time: time ?? this.time,
-      articleId: articleId ?? this.articleId,
-      recommendationId: recommendationId ?? this.recommendationId,
+      relatedId: relatedId ?? this.relatedId,
+      relatedType: relatedType ?? this.relatedType,
       isRead: isRead ?? this.isRead,
     );
   }
