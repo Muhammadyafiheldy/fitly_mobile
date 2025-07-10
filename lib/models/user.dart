@@ -1,25 +1,27 @@
+import 'package:fitly_v1/service/api_service.dart'; // Import ini untuk _baseUrl
+
 class User {
   final int id;
   final String name;
   final String email;
-  final String? token;
-  final String? profilePictureUrl;
+  final String? token; // Token hanya ada saat login/register
+  final String? profilePicturePath; // Ganti dari profilePictureUrl ke Path
 
   User({
     required this.id,
     required this.name,
     required this.email,
     this.token,
-    this.profilePictureUrl,
+    this.profilePicturePath, // Sesuaikan properti
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] as int,
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
+      name: json['name'] ?? 'No Name', // Default value lebih baik
+      email: json['email'] ?? 'No Email', // Default value lebih baik
       token: json['token'] as String?,
-      profilePictureUrl: json['foto'] as String?, // Tetap mapping dari 'foto'
+      profilePicturePath: json['foto'] as String?, // Mapping dari 'foto'
     );
   }
 
@@ -29,18 +31,34 @@ class User {
       'name': name,
       'email': email,
       'token': token,
-      'foto': profilePictureUrl,
+      'foto': profilePicturePath, // Simpan path saja
     };
   }
 
-  // Metode untuk membuat salinan dengan perubahan
-  User copyWith({String? profilePictureUrl}) {
+  // Getter untuk URL gambar lengkap
+  String get fullProfilePictureUrl {
+    if (profilePicturePath != null && profilePicturePath!.isNotEmpty) {
+   
+      return profilePicturePath!; // Backend sudah mengirim URL lengkap
+    }
+    // Return URL gambar default jika tidak ada
+    return 'https://via.placeholder.com/150'; // Ganti dengan URL gambar default Anda jika ada
+  }
+
+  // Metode untuk membuat salinan dengan perubahan (diperbarui)
+  User copyWith({
+    int? id,
+    String? name,
+    String? email,
+    String? token,
+    String? profilePicturePath,
+  }) {
     return User(
-      id: this.id,
-      name: this.name,
-      email: this.email,
-      token: this.token,
-      profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      token: token ?? this.token,
+      profilePicturePath: profilePicturePath ?? this.profilePicturePath,
     );
   }
 }

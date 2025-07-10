@@ -13,9 +13,9 @@ import 'package:fitly_v1/models/notification_model.dart';
 
 class ApiService {
   static const String baseUrl =
-      'https://15db24475760.ngrok-free.app/api';
+      'https://8ffb385d73d6.ngrok-free.app/api';
   static const String baseImageUrl =
-      'https://15db24475760.ngrok-free.app/storage/'; // URL dasar untuk gambar
+      'https://8ffb385d73d6.ngrok-free.app/storage/'; // URL dasar untuk gambar
   static String? _token;
 
   // Simpan token
@@ -178,6 +178,88 @@ class ApiService {
     }
   }
 
+
+ static Future<Article> fetchArticleById(String articleId) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw Exception('Authentication token is not set. Please log in.');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/articles/$articleId'), // Sesuaikan dengan endpoint API Anda
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonData = jsonDecode(response.body);
+      // Asumsi API mengembalikan objek artikel langsung atau dalam kunci 'data'
+      final Map<String, dynamic> articleData = jsonData['data'] ?? jsonData;
+
+      String imageUrl = articleData['image'] != null
+          ? baseImageUrl + articleData['image']
+          : 'https://placehold.co/200x100/CCCCCC/000000?text=No+Image';
+
+      return Article(
+        id: articleData['id'].toString(), // Pastikan ID adalah String
+        title: articleData['title'],
+        content: articleData['content'],
+        image: imageUrl,
+      );
+    } else if (response.statusCode == 404) {
+      throw Exception('Artikel tidak ditemukan dengan ID: $articleId');
+    } else {
+      String errorMessage = 'Gagal memuat detail artikel. Status: ${response.statusCode}';
+      try {
+        final Map<String, dynamic> errorBody = jsonDecode(response.body);
+        if (errorBody.containsKey('message')) {
+          errorMessage = errorBody['message'];
+        }
+      } catch (_) {
+        // Fallback to default message if error body cannot be parsed
+      }
+      throw Exception(errorMessage);
+    }
+  }
+
+  // --- FUNGSI BARU UNTUK MENGAMBIL DETAIL REKOMENDASI BERDASARKAN ID ---
+  static Future<Recommendation> fetchRecommendationById(String recommendationId) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw Exception('Authentication token is not set. Please log in.');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/recommendations/$recommendationId'), // Sesuaikan dengan endpoint API Anda
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonData = jsonDecode(response.body);
+      // Asumsi API mengembalikan objek rekomendasi langsung atau dalam kunci 'data'
+      final Map<String, dynamic> recommendationData = jsonData['data'] ?? jsonData;
+
+      return Recommendation.fromJson(recommendationData);
+    } else if (response.statusCode == 404) {
+      throw Exception('Rekomendasi tidak ditemukan dengan ID: $recommendationId');
+    } else {
+      String errorMessage = 'Gagal memuat detail rekomendasi. Status: ${response.statusCode}';
+      try {
+        final Map<String, dynamic> errorBody = jsonDecode(response.body);
+        if (errorBody.containsKey('message')) {
+          errorMessage = errorBody['message'];
+        }
+      } catch (_) {
+        // Fallback to default message if error body cannot be parsed
+      }
+      throw Exception(errorMessage);
+    }
+  }
   // Logout
   static Future<void> logout() async {
     final headers = await getHeaders();
@@ -193,85 +275,80 @@ class ApiService {
       throw Exception(errorData['message'] ?? 'Failed to logout');
     }
   }
-
+ // Metode baru untuk memperbarui profil (nama, email, foto)
   static Future<Map<String, dynamic>> updateProfile({
-    required String token,
-    String? name,
+    required String name, // Name is now required for this specific update
     String? email,
-    String?
-    currentPassword, // Jika Anda ingin menambahkan validasi password lama di Laravel
-    String? newPassword,
-    String? newPasswordConfirmation,
     File? foto,
   }) async {
-    var request = http.MultipartRequest(
-      'POST', // <-- PERUBAHAN UTAMA DI SINI: GANTI DARI 'PUT' MENJADI 'POST'
-      Uri.parse('$baseUrl/user/update'), // Endpoint Laravel Anda tetap PUT
-    );
-    request.headers.addAll({
-      'Accept': 'application/json',
-      'Authorization': 'Bearer $token',
-    });
+    final token = await _getToken();
+    if (token == null) throw Exception('No token found');
 
+    final uri = Uri.parse('$baseUrl/user/profile');
+    var request = http.MultipartRequest('POST', uri) // Gunakan POST untuk multipart
+      ..headers['Accept'] = 'application/json'
+      ..headers['Authorization'] = 'Bearer $token';
 
-    request.fields['_method'] = 'PUT';
+    request.fields['name'] = name; // Name selalu dikirim
 
-    // Tambahkan field data profil hanya jika tidak null
-    if (name != null) request.fields['name'] = name;
-    if (email != null) request.fields['email'] = email;
-    if (currentPassword != null) {
-      request.fields['current_password'] = currentPassword;
+    if (email != null) {
+      request.fields['email'] = email;
     }
-    if (newPassword != null) request.fields['password'] = newPassword;
-    if (newPasswordConfirmation != null) {
-      request.fields['password_confirmation'] = newPasswordConfirmation;
-    }
-
-    // Tambahkan file foto jika ada
     if (foto != null) {
-      try {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'foto', // Nama field di Laravel untuk foto
-            foto.path,
-            contentType: MediaType('image', foto.path.split('.').last),
-          ),
-        );
-      } catch (e) {
-        // Tangkap error jika gagal memproses file (misalnya path tidak valid)
-        throw Exception('Gagal memproses file foto: $e');
-      }
+      request.files.add(await http.MultipartFile.fromPath('foto', foto.path));
     }
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+    var response = await request.send();
+    var responseBody = await response.stream.bytesToString();
 
-    // Dekode respons dengan penanganan error yang lebih informatif
-    Map<String, dynamic> responseBody;
-    try {
-      responseBody = jsonDecode(response.body) as Map<String, dynamic>;
-     
-      print('Update Profile - Status Code: ${response.statusCode}');
-      print('Update Profile - Raw Body: ${response.body}');
-      print('Update Profile - Decoded Body: $responseBody');
-    } catch (e) {
-      throw Exception(
-        'Respons API tidak valid atau bukan JSON: $e. Body: ${response.body}',
-      );
-    }
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return responseBody;
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return json.decode(responseBody);
     } else {
-      final message = responseBody['message'] ?? 'Gagal memperbarui profil';
-      final errors =
-          responseBody['errors'] ?? {}; 
-      throw Exception(
-        '$message. Status code: ${response.statusCode}. Errors: $errors',
-      );
+      final errorData = json.decode(responseBody);
+      throw Exception(errorData['message'] ?? 'Gagal memperbarui profil');
     }
   }
 
+  // Metode baru untuk mengubah password
+  static Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordConfirmation,
+  }) async {
+    final token = await _getToken();
+    if (token == null) throw Exception('No token found');
+
+    final uri = Uri.parse('$baseUrl/user/password');
+    final response = await http.put( // Menggunakan PUT
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'current_password': currentPassword,
+        'new_password': newPassword,
+        'new_password_confirmation': newPasswordConfirmation,
+      }),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return json.decode(response.body);
+    } else {
+      final errorData = json.decode(response.body);
+      // Laravel validator errors will be in errorData['errors']
+      if (errorData['errors'] != null) {
+        // Gabungkan semua pesan error validasi menjadi satu string
+        String messages = '';
+        errorData['errors'].forEach((key, value) {
+          messages += '${value[0]}\n';
+        });
+        throw Exception(messages.trim()); // Trim untuk menghilangkan newline terakhir
+      }
+      throw Exception(errorData['message'] ?? 'Gagal mengubah password');
+    }
+  }
 
   // Fungsi untuk menyimpan data BMI baru
   static Future<BmiRecord> saveBmiData({
@@ -411,6 +488,39 @@ class ApiService {
     }
   }
 
+  //fungsi menghapus data bmi 
+ static Future<void> deleteBmiRecord(String recordId) async {
+    final token = await _getToken(); // Ambil token
+    if (token == null) {
+      throw Exception('Authentication token is not set. Please log in.');
+    }
+
+    final response = await http.delete(
+    
+      Uri.parse('$baseUrl/bmi/$recordId'), // Menggunakan endpoint '/bmi/{id}'
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': 'application/json', // Tambahkan Accept header
+        'Authorization': 'Bearer $token', // Tambahkan Authorization header
+      },
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) { // 204 No Content juga umum untuk DELETE sukses
+      // Sukses, tidak perlu return apa-apa
+    } else {
+      String errorMessage = 'Gagal menghapus riwayat BMI. Status: ${response.statusCode}';
+      try {
+        final Map<String, dynamic> errorBody = json.decode(response.body);
+        if (errorBody.containsKey('message')) {
+          errorMessage = errorBody['message'];
+        }
+      } catch (_) {
+        // Fallback jika body error tidak bisa di-parse
+      }
+      throw Exception(errorMessage);
+    }
+  }
+
  // --- Fungsi Info Gizi ---
 
   static Future<List<Infogizi>> fetchAllInfogizi() async {
@@ -425,9 +535,7 @@ class ApiService {
       if (responseData['status'] == true && responseData['data'] is List) {
         List<dynamic> dataList = responseData['data'];
         return dataList.map((json) {
-          // TIDAK PERLU MENAMBAHKAN baseImageUrl lagi
-          // Karena image di database sudah berupa URL lengkap
-          // Cukup pastikan properti 'image' ada dan bukan null
+         
           final Map<String, dynamic> modifiedJson = Map.from(json);
           // Jika image null atau kosong, berikan placeholder langsung di sini atau di model
           if (modifiedJson['image'] == null || (modifiedJson['image'] is String && modifiedJson['image'].isEmpty)) {
@@ -464,8 +572,7 @@ class ApiService {
       final Map<String, dynamic> responseData = json.decode(response.body);
       if (responseData['status'] == true && responseData['data'] is Map<String, dynamic>) {
         final Map<String, dynamic> infogiziData = responseData['data'];
-        // TIDAK PERLU MENAMBAHKAN baseImageUrl lagi
-        // Cukup pastikan properti 'image' ada dan bukan null
+      
         if (infogiziData['image'] == null || (infogiziData['image'] is String && infogiziData['image'].isEmpty)) {
           infogiziData['image'] = 'https://placehold.co/200x100/CCCCCC/000000?text=No+Image';
         }
@@ -488,9 +595,10 @@ class ApiService {
     }
   }
 
-  // --- Fungsi Notifikasi Baru ---
+  // --- Fungsi Notifikasi yang Diperbarui (setelah digabung) ---
 
-  static Future<List<AppNotification>> getNotifications() async {
+  // Mengambil daftar semua notifikasi pengguna
+  static Future<List<AppNotification>> fetchNotifications() async {
     final headers = await getHeaders();
     if (headers['Authorization'] == null) {
       throw Exception('Authentication token is not set. Please log in.');
@@ -507,12 +615,15 @@ class ApiService {
         List<dynamic> data = responseData['data'];
         return data.map((json) => AppNotification.fromJson(json)).toList();
       } else {
-        throw Exception('Failed to load notifications: ${responseData['message'] ?? 'Unexpected data format'}');
+        throw Exception(
+            'Failed to load notifications: ${responseData['message'] ?? 'Unexpected data format'}');
       }
     } else if (response.statusCode == 401) {
-      throw Exception('Unauthorized: Sesi Anda telah berakhir. Mohon login kembali.');
+      throw Exception(
+          'Unauthorized: Sesi Anda telah berakhir. Mohon login kembali.');
     } else {
-      String errorMessage = 'Failed to load notifications. Status: ${response.statusCode}';
+      String errorMessage =
+          'Failed to load notifications. Status: ${response.statusCode}';
       try {
         final Map<String, dynamic> errorBody = json.decode(response.body);
         if (errorBody.containsKey('message')) {
@@ -525,27 +636,30 @@ class ApiService {
     }
   }
 
+  // Menandai satu notifikasi sebagai sudah dibaca
   static Future<void> markNotificationAsRead(String notificationId) async {
     final headers = await getHeaders();
     if (headers['Authorization'] == null) {
       throw Exception('Authentication token is not set. Please log in.');
     }
 
-    // Endpoint mark-as-read di Laravel adalah POST
     final response = await http.post(
-      Uri.parse('$baseUrl/notifications/$notificationId/mark-as-read'), // Pastikan ini sesuai dengan route Laravel
+      Uri.parse('$baseUrl/notifications/$notificationId/mark-as-read'),
       headers: headers,
     );
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = json.decode(response.body);
       if (responseData['success'] != true) {
-        throw Exception(responseData['message'] ?? 'Failed to mark notification as read.');
+        throw Exception(
+            responseData['message'] ?? 'Failed to mark notification as read.');
       }
     } else if (response.statusCode == 401) {
-      throw Exception('Unauthorized: Sesi Anda telah berakhir. Mohon login kembali.');
+      throw Exception(
+          'Unauthorized: Sesi Anda telah berakhir. Mohon login kembali.');
     } else {
-      String errorMessage = 'Failed to mark notification as read. Status: ${response.statusCode}';
+      String errorMessage =
+          'Failed to mark notification as read. Status: ${response.statusCode}';
       try {
         final Map<String, dynamic> errorBody = json.decode(response.body);
         if (errorBody.containsKey('message')) {
@@ -558,11 +672,48 @@ class ApiService {
     }
   }
 
+  // Menandai SEMUA notifikasi sebagai sudah dibaca
+  static Future<void> markAllNotificationsAsRead() async {
+    final headers = await getHeaders();
+    if (headers['Authorization'] == null) {
+      throw Exception('Authentication token is not set. Please log in.');
+    }
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/notifications/mark-all-as-read'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      if (responseData['success'] != true) {
+        throw Exception(responseData['message'] ??
+            'Failed to mark all notifications as read.');
+      }
+    } else if (response.statusCode == 401) {
+      throw Exception(
+          'Unauthorized: Sesi Anda telah berakhir. Mohon login kembali.');
+    } else {
+      String errorMessage =
+          'Failed to mark all notifications as read. Status: ${response.statusCode}';
+      try {
+        final Map<String, dynamic> errorBody = json.decode(response.body);
+        if (errorBody.containsKey('message')) {
+          errorMessage = errorBody['message'];
+        }
+      } catch (_) {
+        // Fallback to default message
+      }
+      throw Exception(errorMessage);
+    }
+  }
+
+  // Mengambil jumlah notifikasi yang belum dibaca
   static Future<int> getUnreadNotificationCount() async {
     final headers = await getHeaders();
     if (headers['Authorization'] == null) {
       // Jika tidak ada token, anggap tidak ada notifikasi yang belum dibaca
-      return 0; 
+      return 0;
     }
 
     final response = await http.get(
@@ -575,13 +726,15 @@ class ApiService {
       if (responseData['success'] == true && responseData.containsKey('count')) {
         return responseData['count'] as int;
       } else {
-        throw Exception('Failed to get unread count: ${responseData['message'] ?? 'Unexpected data format'}');
+        throw Exception(
+            'Failed to get unread count: ${responseData['message'] ?? 'Unexpected data format'}');
       }
     } else if (response.statusCode == 401) {
       // Jika unauthorized, anggap tidak ada notifikasi yang belum dibaca atau token invalid
-      return 0; 
+      return 0;
     } else {
-      String errorMessage = 'Failed to get unread count. Status: ${response.statusCode}';
+      String errorMessage =
+          'Failed to get unread count. Status: ${response.statusCode}';
       try {
         final Map<String, dynamic> errorBody = json.decode(response.body);
         if (errorBody.containsKey('message')) {
@@ -590,6 +743,38 @@ class ApiService {
       } catch (_) {
         // Fallback to default message
       }
+      throw Exception(errorMessage);
+    }
+  }
+   // Fungsi baru: Menghapus notifikasi berdasarkan ID
+  static Future<void> deleteNotification(String notificationId) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw Exception('Authentication token is not set. Please log in.');
+    }
+
+    final response = await http.delete(
+      Uri.parse('$baseUrl/notifications/$notificationId'), // Pastikan ini sesuai dengan endpoint DELETE di Laravel Anda
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) { // 200 OK atau 204 No Content biasanya untuk DELETE
+      
+      print('Notifikasi dengan ID $notificationId berhasil dihapus dari backend.');
+    } else {
+      String errorMessage = 'Gagal menghapus notifikasi di backend. Status: ${response.statusCode}';
+      try {
+        final Map<String, dynamic> errorBody = jsonDecode(response.body);
+        if (errorBody.containsKey('message')) {
+          errorMessage = errorBody['message'];
+        }
+      } catch (_) {
+       
+      }
+      print('Error deleting notification: $errorMessage. Response body: ${response.body}');
       throw Exception(errorMessage);
     }
   }

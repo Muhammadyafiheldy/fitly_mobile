@@ -12,41 +12,37 @@ class EditPasswordPage extends StatefulWidget {
 class _EditPasswordPageState extends State<EditPasswordPage> {
   final TextEditingController _currentPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  // final TextEditingController _confirmNewPasswordController = TextEditingController(); // HAPUS INI
+  final TextEditingController _confirmNewPasswordController = TextEditingController(); // Pastikan ini ada
 
   final _formKey = GlobalKey<FormState>();
 
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
-  // bool _obscureConfirmNewPassword = true; // HAPUS INI
+  bool _obscureConfirmNewPassword = true; // Pastikan ini ada
 
   @override
   void dispose() {
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
-    // _confirmNewPasswordController.dispose(); // HAPUS INI
+    _confirmNewPasswordController.dispose();
     super.dispose();
   }
 
-  // Fungsi untuk mengubah password
   Future<void> _changePassword() async {
-    // Pastikan form sudah tervalidasi sebelum memanggil API
     if (_formKey.currentState!.validate()) {
       final authController = Provider.of<AuthController>(context, listen: false);
       final currentPassword = _currentPasswordController.text;
       final newPassword = _newPasswordController.text;
-      // final confirmNewPassword = _confirmNewPasswordController.text; // HAPUS INI
+      final confirmNewPassword = _confirmNewPasswordController.text;
 
       try {
-        // Panggil fungsi changePassword dari AuthController
         final success = await authController.changePassword(
           currentPassword,
           newPassword,
-          newPassword, // KIRIM NEW PASSWORD SEBAGAI CONFIRMATION JUGA
+          confirmNewPassword,
         );
 
         if (success) {
-          // Tampilkan pesan sukses dan kembali ke halaman sebelumnya
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Password berhasil diubah!')),
@@ -54,7 +50,6 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
             Navigator.of(context).pop();
           }
         } else {
-          // Tampilkan pesan error dari AuthController
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Gagal mengubah password: ${authController.errorMessage ?? "Terjadi kesalahan"}')),
@@ -62,7 +57,6 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
           }
         }
       } catch (e) {
-        // Tangani error yang tidak terduga
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Terjadi kesalahan tidak terduga: $e')),
@@ -111,8 +105,8 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
                     children: [
                       CircleAvatar(
                         radius: 60,
-                        backgroundImage: auth.user?.profilePictureUrl != null && auth.user!.profilePictureUrl!.isNotEmpty
-                            ? NetworkImage(auth.user!.profilePictureUrl!) as ImageProvider
+                        backgroundImage: auth.user?.fullProfilePictureUrl != null && auth.user!.fullProfilePictureUrl!.isNotEmpty
+                            ? NetworkImage(auth.user!.fullProfilePictureUrl!) as ImageProvider
                             : const AssetImage('assets/img/profil.jpg') as ImageProvider,
                         onBackgroundImageError: (exception, stackTrace) {
                           debugPrint('Error loading profile image: $exception');
@@ -183,7 +177,7 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
                           },
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Password saat ini tidak boleh kosong.';
+                              return 'Password saat ini tidak boleh kosong';
                             }
                             return null;
                           },
@@ -191,7 +185,7 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
                         const SizedBox(height: 20),
                         _buildPasswordInputField(
                           label: 'New Password',
-                          icon: Icons.lock_open_outlined,
+                          icon: Icons.lock_outline,
                           controller: _newPasswordController,
                           obscureText: _obscureNewPassword,
                           toggleVisibility: () {
@@ -201,41 +195,39 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
                           },
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Password baru tidak boleh kosong.';
+                              return 'Password baru tidak boleh kosong';
                             }
                             if (value.length < 8) {
-                              return 'Password baru minimal 8 karakter.';
+                              return 'Password baru minimal 8 karakter';
                             }
                             return null;
                           },
                         ),
-                        // HAPUS BAGIAN INI: Confirm New Password
-                        // const SizedBox(height: 20),
-                        // _buildPasswordInputField(
-                        //   label: 'Confirm New Password',
-                        //   icon: Icons.lock_open_outlined,
-                        //   controller: _confirmNewPasswordController,
-                        //   obscureText: _obscureConfirmNewPassword,
-                        //   toggleVisibility: () {
-                        //     setState(() {
-                        //       _obscureConfirmNewPassword = !_obscureConfirmNewPassword;
-                        //     });
-                        //   },
-                        //   validator: (value) {
-                        //     if (value == null || value.isEmpty) {
-                        //       return 'Konfirmasi password tidak boleh kosong.';
-                        //     }
-                        //     if (value != _newPasswordController.text) {
-                        //       return 'Konfirmasi password tidak cocok.';
-                        //     }
-                        //     return null;
-                        //   },
-                        // ),
+                        const SizedBox(height: 20),
+                        _buildPasswordInputField(
+                          label: 'Confirm New Password',
+                          icon: Icons.lock_outline,
+                          controller: _confirmNewPasswordController,
+                          obscureText: _obscureConfirmNewPassword,
+                          toggleVisibility: () {
+                            setState(() {
+                              _obscureConfirmNewPassword = !_obscureConfirmNewPassword;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Konfirmasi password tidak boleh kosong';
+                            }
+                            if (value != _newPasswordController.text) {
+                              return 'Konfirmasi password tidak cocok';
+                            }
+                            return null;
+                          },
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 40),
-
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -248,14 +240,14 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
                       ).copyWith(
-                        overlayColor: MaterialStateProperty.resolveWith<Color?>(
-                          (Set<MaterialState> states) {
-                            if (states.contains(MaterialState.pressed)) {
-                              return Colors.white.withOpacity(0.2);
-                            }
-                            return null;
-                          },
-                        ),
+                        overlayColor: MaterialStateProperty.resolveWith<Color?>((
+                          Set<MaterialState> states,
+                        ) {
+                          if (states.contains(MaterialState.pressed)) {
+                            return Colors.white.withOpacity(0.2);
+                          }
+                          return null;
+                        }),
                       ),
                       child: Ink(
                         decoration: BoxDecoration(
@@ -270,9 +262,11 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
                           alignment: Alignment.center,
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           child: auth.isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
                               : const Text(
-                                  'SAVE',
+                                  'UBAH PASSWORD',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -292,13 +286,12 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
     );
   }
 
-  // Helper method untuk input field password
   Widget _buildPasswordInputField({
     required String label,
     required IconData icon,
     required TextEditingController controller,
     required bool obscureText,
-    required VoidCallback toggleVisibility,
+    VoidCallback? toggleVisibility,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -319,42 +312,30 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
           validator: validator,
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: const Color(0xFF8B7355)),
-            hintText: 'Enter $label',
-            suffixIcon: IconButton(
-              icon: Icon(
-                obscureText ? Icons.visibility : Icons.visibility_off,
-                color: const Color(0xFF8B7355),
-              ),
-              onPressed: toggleVisibility,
-            ),
+            suffixIcon: toggleVisibility != null
+                ? IconButton(
+                    icon: Icon(
+                      obscureText ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: toggleVisibility,
+                  )
+                : null,
+            hintText: 'Masukkan $label',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none,
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFA4DD00), width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-            ),
             filled: true,
             fillColor: Colors.grey.shade200,
-            contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 15,
+              horizontal: 10,
+            ),
           ),
           style: const TextStyle(
             color: Colors.black,
           ),
-          cursorColor: const Color(0xFFA4DD00),
         ),
       ],
     );

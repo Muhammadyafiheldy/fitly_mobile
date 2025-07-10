@@ -10,7 +10,7 @@ class AuthController with ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isUserLoaded = false;
-  String? _authToken; 
+  // String? _authToken; // Token sekarang dikelola di ApiService dan SharedPreferences
 
   // Getter
   User? get user => _user;
@@ -20,19 +20,23 @@ class AuthController with ChangeNotifier {
   String get userName => _user?.name ?? 'Guest';
   String get userEmail => _user?.email ?? '-';
   bool get isUserLoaded => _isUserLoaded;
-  String? get authToken => _authToken; 
+  // String? get authToken => _authToken; // Tidak perlu getter ini lagi
 
   // Load user from SharedPreferences
   Future<void> loadUserFromPrefs() async {
+    _isLoading = true;
+    notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       final userDataString = prefs.getString('user_data');
-      if (userDataString != null) {
+      final token = prefs.getString('auth_token'); // Dapatkan token
+      if (userDataString != null && token != null) { // Pastikan token juga ada
         final userData = json.decode(userDataString);
-        _user = User.fromJson(userData);
+        _user = User.fromJson(userData).copyWith(token: token); // Tambahkan token saat load
         _isUserLoaded = true;
         debugPrint('AuthController: User loaded: ${_user?.name}');
       } else {
+        _user = null;
         _isUserLoaded = true; // tetap true agar UI tahu proses load selesai
       }
     } catch (e) {
@@ -40,6 +44,7 @@ class AuthController with ChangeNotifier {
       _user = null;
       _isUserLoaded = true;
     } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }
@@ -48,12 +53,14 @@ class AuthController with ChangeNotifier {
   Future<void> _saveUserToPrefs(User user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_data', jsonEncode(user.toJson()));
+    // Token sudah disimpan oleh ApiService, jadi tidak perlu disimpan di sini lagi
   }
 
   // Clear user data from SharedPreferences
   Future<void> _clearUserFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_data');
+    await prefs.remove('auth_token'); // Hapus token juga
   }
 
   // Login method
@@ -118,7 +125,7 @@ class AuthController with ChangeNotifier {
   }
 
   // Update Profile
-  Future<bool> updateProfile(String newName, {File? newProfilePicture}) async {
+  Future<bool> updateProfile(String newName, {String? newEmail, File? newProfilePicture}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -126,22 +133,24 @@ class AuthController with ChangeNotifier {
     try {
       if (_user == null) throw Exception('User not logged in.');
 
-      final updatedUserData = await ApiService.updateProfile(
-        token: _user!.token!,
+      final updatedResponse = await ApiService.updateProfile(
         name: newName,
-        email: _user!.email,
+        email: newEmail, // Mengirim email jika ada perubahan
         foto: newProfilePicture,
       );
 
-      if (updatedUserData['data'] == null) {
+      if (updatedResponse['data'] == null) {
         throw Exception('Data user tidak ditemukan dalam respons.');
       }
 
-      _user = User.fromJson(updatedUserData['data']);
+      // Pastikan token tetap ada setelah update, karena API tidak mengembalikannya
+      final newUser = User.fromJson(updatedResponse['data']).copyWith(token: _user!.token);
+      _user = newUser;
       await _saveUserToPrefs(_user!);
       return true;
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      debugPrint('Error updating profile: $_errorMessage');
       return false;
     } finally {
       _isLoading = false;
@@ -160,24 +169,33 @@ class AuthController with ChangeNotifier {
         throw Exception('User tidak terautentikasi. Silakan login kembali.');
       }
 
-      
-
-      final updatedUserData = await ApiService.updateProfile(
-        token: _user!.token!,
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-        newPasswordConfirmation: confirmNewPassword, // Ini akan tetap dikirim ke API
-      );
-
-      if (updatedUserData['data'] == null) {
-        throw Exception('Data user tidak ditemukan dalam respons update password.');
+      // Validasi frontend untuk konfirmasi password
+      if (newPassword != confirmNewPassword) {
+        throw Exception('Konfirmasi password baru tidak cocok.');
+      }
+      if (newPassword.length < 8) {
+        throw Exception('Password baru minimal 8 karakter.');
       }
 
-      _user = User.fromJson(updatedUserData['data']);
-      await _saveUserToPrefs(_user!);
+      final updatedResponse = await ApiService.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        newPasswordConfirmation: confirmNewPassword,
+      );
+
+      // Backend hanya mengembalikan pesan sukses dan data user, token tidak berubah.
+      // Jika Anda tidak ingin user logout setelah ganti password, tidak perlu update _user di sini
+      // atau hanya update field password (yang tidak ada di model User)
+      if (updatedResponse['data'] != null) {
+          // Hanya update data user yang bisa berubah, token tetap
+          _user = User.fromJson(updatedResponse['data']).copyWith(token: _user!.token);
+          await _saveUserToPrefs(_user!);
+      }
+      
       return true;
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      debugPrint('Error changing password: $_errorMessage');
       return false;
     } finally {
       _isLoading = false;

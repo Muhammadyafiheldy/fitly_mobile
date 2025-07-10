@@ -1,4 +1,3 @@
-// code profile_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitly_v1/controller/auth_controller.dart';
@@ -19,7 +18,10 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
 
-    Future.microtask(() {
+    // Memanggil loadUserFromPrefs saat initState.
+    // Gunakan WidgetsBinding.instance.addPostFrameCallback
+    // untuk memastikan context sudah siap.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AuthController>(context, listen: false).loadUserFromPrefs();
       debugPrint('ProfilePage: initState - loadUserFromPrefs called.');
     });
@@ -67,7 +69,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Consumer<AuthController>(
                   builder: (context, auth, child) {
                     debugPrint(
-                      'ProfilePage: Consumer rebuild - userName: ${auth.userName}, userEmail: ${auth.userEmail}',
+                      'ProfilePage: Consumer rebuild - userName: ${auth.userName}, userEmail: ${auth.userEmail}, profilePictureUrl: ${auth.user?.fullProfilePictureUrl}',
                     );
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -81,19 +83,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           child: CircleAvatar(
                             radius: 46,
-                            // Menggunakan NetworkImage jika ada URL, jika tidak menggunakan AssetImage default
-                            backgroundImage:
-                                (auth.user?.profilePictureUrl != null &&
-                                        auth
-                                            .user!
-                                            .profilePictureUrl!
-                                            .isNotEmpty)
-                                    ? NetworkImage(
-                                          auth.user!.profilePictureUrl!,
-                                        )
-                                        as ImageProvider<Object>
-                                    : const AssetImage('assets/img/profil.jpg')
-                                        as ImageProvider<Object>,
+                            // MENGGUNAKAN fullProfilePictureUrl DARI MODEL USER
+                            backgroundImage: (auth.user?.fullProfilePictureUrl != null &&
+                                    auth.user!.fullProfilePictureUrl.isNotEmpty)
+                                ? NetworkImage(
+                                    auth.user!.fullProfilePictureUrl,
+                                  ) as ImageProvider<Object>
+                                : const AssetImage('assets/img/profil.jpg')
+                                    as ImageProvider<Object>,
                             onBackgroundImageError: (exception, stackTrace) {
                               debugPrint(
                                 'Error loading profile image: $exception',
@@ -145,7 +142,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       icon: Icons.person_outline,
                       title: 'Account',
                       onTap: () {
-                        // Navigasi ke halaman EditProfilePage
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -166,12 +162,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         );
                       },
                     ),
-
                     _buildMenuItem(
                       icon: Icons.lock_outline,
                       title: 'Passwords',
                       onTap: () {
-                        // Navigasi ke halaman EditPasswordPage
                         Navigator.push(
                           context,
                           MaterialPageRoute(

@@ -1,3 +1,5 @@
+// lib/models/notification_model.dart
+
 import 'package:flutter/foundation.dart';
 
 class AppNotification {
@@ -16,8 +18,8 @@ class AppNotification {
     required this.title,
     required this.subtitle,
     required this.time,
-    this.relatedId, // Diubah
-    this.relatedType, // Diubah
+    this.relatedId,
+    this.relatedType,
     required this.isRead,
   });
 
@@ -29,9 +31,9 @@ class AppNotification {
       title: json['title'] as String,
       subtitle: json['subtitle'] as String,
       time: json['time'] as String, // Asumsi 'time' sudah diformat di backend
-      relatedId: json['related_id']?.toString(), // Mengambil related_id
-      relatedType: json['related_type'] as String?, // Mengambil related_type
-      isRead: json['is_read'] as bool,
+      relatedId: json['related_id']?.toString(), // Mengambil related_id, bisa null
+      relatedType: json['related_type'] as String?, // Mengambil related_type, bisa null
+      isRead: json['is_read'] as bool, // Mengambil is_read sebagai boolean
     );
   }
 
@@ -43,8 +45,8 @@ class AppNotification {
       'title': title,
       'subtitle': subtitle,
       'time': time,
-      'related_id': relatedId, // Diubah
-      'related_type': relatedType, // Diubah
+      'related_id': relatedId,
+      'related_type': relatedType,
       'is_read': isRead,
     };
   }
@@ -56,8 +58,8 @@ class AppNotification {
     String? title,
     String? subtitle,
     String? time,
-    String? relatedId, // Diubah
-    String? relatedType, // Diubah
+    String? relatedId,
+    String? relatedType,
     bool? isRead,
   }) {
     return AppNotification(

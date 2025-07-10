@@ -1,10 +1,8 @@
-// lib/pages/history_page.dart (BAGIAN YANG DIUBAH)
-
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Import untuk format tanggal
-import 'package:fitly_v1/models/bmi.dart'; // Import model BmiRecord
-import 'package:fitly_v1/views/hitung_bmi.dart'; // Import halaman HitungBmi
-import 'package:fitly_v1/service/api_service.dart'; // Import ApiService
+import 'package:intl/intl.dart';
+import 'package:fitly_v1/models/bmi.dart'; 
+import 'package:fitly_v1/views/hitung_bmi.dart'; 
+import 'package:fitly_v1/service/api_service.dart'; 
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({Key? key}) : super(key: key);
@@ -17,7 +15,7 @@ class _HistoryPageState extends State<HistoryPage> {
   List<BmiRecord> _bmiHistoryData = [];
   bool _isLoading = true;
   String? _errorMessage;
-  String _selectedSortOption = 'latest'; // Default: terbaru ('latest' or 'oldest')
+  String _selectedSortOption = 'latest'; 
 
   @override
   void initState() {
@@ -56,21 +54,48 @@ class _HistoryPageState extends State<HistoryPage> {
     });
   }
 
+  // --- FUNGSI UNTUK MENGHAPUS BMI RECORD ---
+  Future<void> _deleteBmiRecord(dynamic recordId) async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      // Pastikan recordId dikonversi ke String sebelum dikirim ke ApiService
+      await ApiService.deleteBmiRecord(recordId.toString());
+
+      setState(() {
+        // Hapus item dari daftar lokal setelah sukses dihapus dari API
+        _bmiHistoryData.removeWhere((record) => record.id.toString() == recordId.toString());
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('BMI record deleted successfully!')),
+      );
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to delete BMI record: ${e.toString()}';
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting BMI record: ${e.toString()}')),
+      );
+      print('Error deleting BMI record: $e'); // For debugging
+    }
+  }
+  // --- AKHIR FUNGSI DELETE ---
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      // --- PERUBAHAN UTAMA DI SINI ---
-      body: Column( // Langsung gunakan Column tanpa SafeArea di level ini
+      body: Column(
         children: [
-          // Header (Sekarang tidak dalam SafeArea)
+          // Header
           Container(
             width: double.infinity,
-            // Anda bisa menggunakan MediaQuery.of(context).padding.top
-            // untuk menambahkan padding secara manual untuk status bar
             padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 20, // Padding atas untuk status bar + ruang
-              bottom: 20, // Padding bawah
+              top: MediaQuery.of(context).padding.top + 20,
+              bottom: 20,
               left: 20,
               right: 20,
             ),
@@ -103,7 +128,6 @@ class _HistoryPageState extends State<HistoryPage> {
               ],
             ),
           ),
-          // --- AKHIR PERUBAHAN UTAMA ---
 
           const SizedBox(height: 20),
 
@@ -139,7 +163,7 @@ class _HistoryPageState extends State<HistoryPage> {
                       child: Text('Oldest'),
                     ),
                   ],
-                  child: const Row( // Ditambahkan const
+                  child: const Row(
                     children: [
                       Text(
                         'Sort By',
@@ -163,7 +187,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
           const SizedBox(height: 15),
 
-          // BMI History List (Sekarang bagian ini dalam Expanded yang tetap di dalam Column)
+          // BMI History List
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -243,6 +267,36 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
         );
       },
+      // --- PERUBAHAN UTAMA DI SINI: MENAMBAHKAN onLongPress ---
+      onLongPress: () {
+        showDialog(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return AlertDialog(
+              title: const Text('Delete BMI Record'),
+              content: const Text('Are you sure you want to delete this BMI record?'),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop(); // Dismiss the dialog
+                  },
+                ),
+                TextButton(
+                  child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop(); // Dismiss the dialog
+                    // --- BARIS YANG DIPERBAIKI ---
+                    _deleteBmiRecord(item.id.toString()); // Konversi item.id ke String
+                    // --- AKHIR BARIS YANG DIPERBAIKI ---
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+      // --- AKHIR PERUBAHAN UTAMA ---
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
         decoration: BoxDecoration(
@@ -275,7 +329,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text( // Ditambahkan const
+                      const Text(
                         'BMI Calculation',
                         style: TextStyle(
                           fontSize: 14,

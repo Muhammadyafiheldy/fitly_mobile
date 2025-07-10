@@ -1,3 +1,5 @@
+// lib/views/home.dart
+
 import 'package:fitly_v1/controller/my_carousel_controller.dart' as cs;
 import 'package:fitly_v1/views/notification.dart';
 import 'package:fitly_v1/widget/artikel_slider.dart';
@@ -8,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fitly_v1/controller/auth_controller.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:fitly_v1/controller/notification_controller.dart'; // Import NotificationController
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,10 +33,17 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
+    // Muat data pengguna jika belum dimuat
     final auth = Provider.of<AuthController>(context, listen: false);
     if (!auth.isUserLoaded) {
       auth.loadUserFromPrefs();
     }
+
+    // Panggil fetchUnreadCount segera setelah widget dibangun
+    // Ini memastikan badge notifikasi diperbarui saat pertama kali masuk Home
+    Future.microtask(() {
+      Provider.of<NotificationController>(context, listen: false).fetchUnreadCount();
+    });
   }
 
   @override
@@ -55,10 +65,28 @@ class _HomePageState extends State<HomePage>
             ),
             child: Row(
               children: [
+                // Display user profile picture
+                // Jika ingin menggunakan gambar profil dari URL (misal dari AuthController)
+                // Hapus komentar pada kode di bawah dan pastikan AuthController.userProfileImageUrl berfungsi
+                /*
+                Consumer<AuthController>(
+                  builder: (context, authController, child) {
+                    final imageUrl = authController.userProfileImageUrl;
+                    return CircleAvatar(
+                      radius: 24,
+                      backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+                          ? CachedNetworkImageProvider(imageUrl) as ImageProvider
+                          : const AssetImage('assets/img/profil.jpg'), // Default local asset
+                    );
+                  },
+                ),
+                */
+                // Menggunakan gambar profil lokal secara default
                 const CircleAvatar(
                   radius: 24,
                   backgroundImage: AssetImage('assets/img/profil.jpg'),
                 ),
+
                 const SizedBox(width: 12),
                 Expanded(
                   child: Selector<AuthController, String>(
@@ -84,12 +112,59 @@ class _HomePageState extends State<HomePage>
                     },
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.notifications_none, color: Colors.white),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const NotificationPage()),
+                // Notification Icon with Badge
+                Consumer<NotificationController>(
+                  builder: (context, notificationController, child) {
+                    final unreadCount = notificationController.unreadCount;
+                    return Stack(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.notifications_none,
+                              color: Colors.white),
+                          onPressed: () async {
+                            // Ambil notifikasi terbaru dari backend sebelum navigasi
+                            // Ini penting agar NotificationPage menampilkan status 'dibaca' yang paling baru
+                            await notificationController.fetchNotificationsFromBackend();
+                            // Navigasi ke halaman notifikasi
+                            // Menggunakan .then() untuk memicu pembaruan unreadCount setelah kembali
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const NotificationPage(),
+                              ),
+                            ).then((_) {
+                              // Setelah kembali dari NotificationPage, perbarui jumlah notifikasi yang belum dibaca
+                              // Ini akan menghilangkan badge merah jika semua notifikasi sudah dibaca
+                              notificationController.fetchUnreadCount();
+                            });
+                          },
+                        ),
+                        // Tampilkan badge merah jika ada notifikasi belum dibaca
+                        if (unreadCount > 0)
+                          Positioned(
+                            right: 11,
+                            top: 11,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 14,
+                                minHeight: 14,
+                              ),
+                              child: Text(
+                                '$unreadCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          )
+                      ],
                     );
                   },
                 ),
@@ -97,7 +172,7 @@ class _HomePageState extends State<HomePage>
             ),
           ),
 
-          // Konten scrollable
+          // Scrollable content
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),

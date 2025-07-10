@@ -13,6 +13,7 @@ class EditProfilePage extends StatefulWidget {
 
 class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _nameController;
+  late TextEditingController _emailController; // Tambahkan controller untuk email
   File? _pickedImageFile;
 
   @override
@@ -20,11 +21,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.initState();
     final authController = Provider.of<AuthController>(context, listen: false);
     _nameController = TextEditingController(text: authController.userName);
+    _emailController = TextEditingController(text: authController.userEmail); // Inisialisasi email
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose(); // Dispose email controller
     super.dispose();
   }
 
@@ -41,17 +44,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> _saveProfile() async {
     final authController = Provider.of<AuthController>(context, listen: false);
     final newName = _nameController.text.trim();
+    final newEmail = _emailController.text.trim(); // Ambil email baru
 
     if (newName.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Nama tidak boleh kosong.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nama tidak boleh kosong.')));
       return;
     }
+    // Tambahkan validasi dasar untuk email jika diperlukan
+    if (newEmail.isEmpty || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(newEmail)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email tidak valid.')));
+      return;
+    }
+
 
     try {
       final success = await authController.updateProfile(
         newName,
+        newEmail: newEmail, // Kirim email baru
         newProfilePicture: _pickedImageFile,
       );
 
@@ -60,9 +69,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           const SnackBar(content: Text('Profil berhasil diperbarui!')),
         );
         if (mounted) {
-          Navigator.of(
-            context,
-          ).pop(); // Kembali ke halaman sebelumnya (misalnya ProfilePage)
+          Navigator.of(context).pop();
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -74,9 +81,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
     }
   }
 
@@ -113,25 +118,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       backgroundImage:
                           _pickedImageFile != null
                               ? FileImage(_pickedImageFile!) as ImageProvider
-                              : (auth.user?.profilePictureUrl != null &&
-                                          auth
-                                              .user!
-                                              .profilePictureUrl!
-                                              .isNotEmpty
-                                      ? (File(
-                                            auth.user!.profilePictureUrl!,
-                                          ).existsSync()
-                                          ? FileImage(
-                                            File(auth.user!.profilePictureUrl!),
-                                          )
-                                          : const AssetImage(
-                                                'assets/img/profil.jpg',
-                                              )
-                                              as ImageProvider)
-                                      : const AssetImage(
-                                        'assets/img/profil.jpg',
-                                      ))
-                                  as ImageProvider,
+                              : (auth.user?.fullProfilePictureUrl != null &&
+                                      auth.user!.fullProfilePictureUrl!.isNotEmpty
+                                  ? NetworkImage(auth.user!.fullProfilePictureUrl!) as ImageProvider // Gunakan NetworkImage
+                                  : const AssetImage('assets/img/profil.jpg') as ImageProvider),
                       onBackgroundImageError: (exception, stackTrace) {
                         debugPrint('Error loading profile image: $exception');
                       },
@@ -196,8 +186,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       _buildProfileInputField(
                         label: 'Email',
                         icon: Icons.email_outlined,
-                        controller: TextEditingController(text: auth.userEmail),
-                        enabled: false,
+                        controller: _emailController, // Gunakan email controller
+                        enabled: false, // Email tidak bisa diubah
                       ),
                     ],
                   ),
@@ -239,16 +229,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         child:
                             auth.isLoading
                                 ? const CircularProgressIndicator(
-                                  color: Colors.white,
-                                )
-                                : const Text(
-                                  'SIMPAN',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
                                     color: Colors.white,
+                                  )
+                                : const Text(
+                                    'SIMPAN',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
                                   ),
-                                ),
                       ),
                     ),
                   ),
